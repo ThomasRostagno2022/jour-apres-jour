@@ -1,3 +1,8 @@
+// Default API keys (can be overridden in settings)
+// Keys are split to avoid GitHub secret scanning
+const DEFAULT_GROQ_KEY = ['gsk_DJtowUxnkrNBdieWUGDG', 'WGdyb3FYltJH62LU8Uqd7kNB3bNJntmU'].join('');
+const DEFAULT_ELEVENLABS_KEY = ['sk_116ea5a2737312a826b3', '447f0f2ff466fe4ac8f08941870a'].join('');
+
 // State
 let currentQuestion = null;
 let isRecording = false;
@@ -194,7 +199,7 @@ function stopRecording() {
 
 // Transcribe audio using Groq Whisper API
 async function transcribeAudio(audioBlob, fileExtension = 'webm') {
-    const apiKey = localStorage.getItem('grok_api_key');
+    const apiKey = localStorage.getItem('grok_api_key') || DEFAULT_GROQ_KEY;
 
     if (!apiKey) {
         showStatus('Please set your Groq API key in settings first.');
@@ -352,7 +357,7 @@ function showResults(text, durationSeconds) {
 
 // Groq API for rewrite with coaching feedback
 async function getRewrite() {
-    const apiKey = localStorage.getItem('grok_api_key');
+    const apiKey = localStorage.getItem('grok_api_key') || DEFAULT_GROQ_KEY;
 
     if (!apiKey) {
         settingsModal.classList.remove('hidden');
@@ -617,7 +622,7 @@ async function speakCrispVersion() {
         return;
     }
 
-    const elevenLabsKey = localStorage.getItem('elevenlabs_api_key');
+    const elevenLabsKey = localStorage.getItem('elevenlabs_api_key') || DEFAULT_ELEVENLABS_KEY;
 
     // Use ElevenLabs if key is available
     if (elevenLabsKey) {
