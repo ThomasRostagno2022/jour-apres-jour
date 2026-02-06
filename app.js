@@ -1,7 +1,8 @@
 // State
 let currentQuestion = null;
 let isRecording = false;
-let recognition = null;
+let mediaRecorder = null;
+let audioChunks = [];
 let transcript = '';
 let startTime = null;
 let timerInterval = null;
@@ -48,125 +49,11 @@ const paceStatusEl = document.getElementById('pace-status');
 const longestSentenceEl = document.getElementById('longest-sentence');
 const sentenceStatusEl = document.getElementById('sentence-status');
 
-// Debug helper - shows status on screen
-function showDebug(msg) {
-    console.log(msg);
+// Show status message
+function showStatus(msg) {
     if (transcriptText) {
         transcriptText.textContent = msg;
     }
-}
-
-// Initialize Speech Recognition
-function initSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-        alert('Speech recognition is not supported in this browser. Please use Safari on iOS or Chrome.');
-        return false;
-    }
-
-    showDebug('Creating recognition...');
-
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-    recognition.maxAlternatives = 1;
-
-    let finalResults = '';
-
-    recognition.onresult = (event) => {
-        showDebug('Got result!');
-        let interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            const result = event.results[i];
-            if (result.isFinal) {
-                finalResults += result[0].transcript + ' ';
-            } else {
-                interimTranscript += result[0].transcript;
-            }
-        }
-
-        transcript = (finalResults + interimTranscript).trim();
-
-        if (transcript && transcriptText) {
-            transcriptText.textContent = transcript + '...';
-        }
-    };
-
-    recognition.onerror = (event) => {
-        showDebug('Error: ' + event.error);
-        if (event.error === 'not-allowed') {
-            alert('Microphone access denied. Go to Settings > Safari > Microphone and enable for this site.');
-        } else if (event.error === 'no-speech') {
-            if (isRecording) {
-                showDebug('No speech - restarting...');
-                try {
-                    setTimeout(() => {
-                        if (isRecording && recognition) {
-                            recognition.start();
-                        }
-                    }, 200);
-                } catch (e) {}
-            }
-        } else if (event.error === 'aborted') {
-            showDebug('Aborted - restarting...');
-            if (isRecording) {
-                try {
-                    setTimeout(() => {
-                        if (isRecording && recognition) {
-                            recognition.start();
-                        }
-                    }, 200);
-                } catch (e) {}
-            }
-        }
-    };
-
-    recognition.onend = () => {
-        showDebug('Recognition ended');
-        if (isRecording) {
-            showDebug('Restarting...');
-            try {
-                setTimeout(() => {
-                    if (isRecording && recognition) {
-                        recognition.start();
-                    }
-                }, 200);
-            } catch (e) {
-                showDebug('Restart failed: ' + e.message);
-            }
-        }
-    };
-
-    recognition.onaudiostart = () => {
-        showDebug('Audio started - speak now!');
-    };
-
-    recognition.onspeechstart = () => {
-        showDebug('Speech detected!');
-    };
-
-    recognition.onstart = () => {
-        showDebug('Listening... speak now!');
-    };
-
-    recognition.onsoundstart = () => {
-        showDebug('Sound detected');
-    };
-
-    return true;
-}
-
-// Reset recognition state
-function resetRecognition() {
-    if (recognition) {
-        try {
-            recognition.stop();
-        } catch (e) {}
-    }
-    recognition = null;
 }
 
 // Timer functions
@@ -200,64 +87,141 @@ function updateTimerDisplay() {
     timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// Recording functions
-function startRecording() {
-    // Always create fresh recognition instance for iOS Safari
-    resetRecognition();
+// Recording functions using MediaRecorder
+async function startRecording() {
+    try {
+        showStatus('Requesting microphone...');
 
-    isRecording = true;
-    transcript = '';
-    startTime = Date.now();
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 16000
+            }
+        });
 
-    recordBtn.classList.add('recording');
-    recordLabel.textContent = 'Tap to Stop';
-    resetBtn.classList.add('hidden');
+        showStatus('Microphone ready! Speak now...');
 
-    // Show results section for debug feedback
-    resultsSection.classList.remove('hidden');
-
-    if (!initSpeechRecognition()) {
-        showDebug('Failed to init recognition');
-        return;
-    }
-
-    showDebug('Starting timer...');
-    startTimer();
-
-    // Small delay helps iOS Safari
-    setTimeout(() => {
-        try {
-            showDebug('Starting recognition...');
-            recognition.start();
-        } catch (e) {
-            showDebug('Start failed: ' + e.message);
-            alert('Could not start microphone: ' + e.message);
+        // Determine supported mime type
+        let mimeType = 'audio/webm';
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+            mimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+            mimeType = 'audio/ogg';
         }
-    }, 100);
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = async () => {
+            // Stop all tracks
+            stream.getTracks().forEach(track => track.stop());
+
+            if (audioChunks.length > 0) {
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                await transcribeAudio(audioBlob);
+            } else {
+                showStatus('No audio recorded. Please try again.');
+            }
+        };
+
+        mediaRecorder.onerror = (event) => {
+            showStatus('Recording error: ' + event.error);
+        };
+
+        // Start recording
+        mediaRecorder.start(1000); // Collect data every second
+
+        isRecording = true;
+        transcript = '';
+        startTime = Date.now();
+
+        recordBtn.classList.add('recording');
+        recordLabel.textContent = 'Tap to Stop';
+        resetBtn.classList.add('hidden');
+        resultsSection.classList.remove('hidden');
+
+        startTimer();
+
+    } catch (err) {
+        console.error('Microphone error:', err);
+        if (err.name === 'NotAllowedError') {
+            showStatus('Microphone access denied. Please allow microphone in Settings > Safari.');
+            alert('Microphone access denied.\n\nOn iPhone:\n1. Go to Settings > Safari\n2. Scroll to "Settings for Websites"\n3. Tap Microphone\n4. Set to "Allow"');
+        } else {
+            showStatus('Error: ' + err.message);
+        }
+    }
 }
 
 function stopRecording() {
     isRecording = false;
-    const endTime = Date.now();
-    const durationSeconds = (endTime - startTime) / 1000;
+    stopTimer();
 
     recordBtn.classList.remove('recording');
     recordLabel.textContent = 'Tap to Record';
 
-    stopTimer();
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        showStatus('Processing audio...');
+        mediaRecorder.stop();
+    }
+}
 
-    if (recognition) {
-        recognition.stop();
+// Transcribe audio using Groq Whisper API
+async function transcribeAudio(audioBlob) {
+    const apiKey = localStorage.getItem('grok_api_key');
+
+    if (!apiKey) {
+        showStatus('Please set your Groq API key in settings first.');
+        settingsModal.classList.remove('hidden');
+        return;
     }
 
-    // Small delay to capture final transcript
-    setTimeout(() => {
-        if (transcript.trim()) {
+    showStatus('Transcribing with AI...');
+
+    try {
+        // Create form data with audio file
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'recording.webm');
+        formData.append('model', 'whisper-large-v3');
+        formData.append('language', 'en');
+        formData.append('response_format', 'text');
+
+        const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `Transcription failed: ${response.status}`);
+        }
+
+        transcript = await response.text();
+        transcript = transcript.trim();
+
+        if (transcript) {
+            const durationSeconds = (Date.now() - startTime) / 1000;
             showResults(transcript, durationSeconds);
         } else {
-            alert('No speech detected. Please try again and speak clearly.');
+            showStatus('No speech detected. Please speak louder and try again.');
         }
-    }, 500);
+
+    } catch (error) {
+        console.error('Transcription error:', error);
+        showStatus('Transcription failed: ' + error.message);
+    }
 }
 
 function toggleRecording() {
@@ -312,20 +276,6 @@ function calculatePace(wordCount, durationSeconds) {
     return Math.round((wordCount / durationSeconds) * 60);
 }
 
-function getStatus(value, good, warning) {
-    if (typeof good === 'object') {
-        // Range: { min, max }
-        if (value >= good.min && value <= good.max) return 'good';
-        if (value >= warning.min && value <= warning.max) return 'warning';
-        return 'bad';
-    } else {
-        // Threshold: lower is better
-        if (value <= good) return 'good';
-        if (value <= warning) return 'warning';
-        return 'bad';
-    }
-}
-
 // Results display
 function showResults(text, durationSeconds) {
     transcriptText.textContent = text;
@@ -340,7 +290,6 @@ function showResults(text, durationSeconds) {
 
     // Update scorecard
     wordCountEl.textContent = wordCount;
-    const wordStatus = getStatus(wordCount, targetWordCount * 1.1, targetWordCount * 1.3);
     wordStatusEl.textContent = wordCount <= targetWordCount ? `Target: ${targetWordCount}` : `${Math.round((wordCount / targetWordCount - 1) * 100)}% over`;
     wordStatusEl.className = `score-status ${wordCount <= targetWordCount * 1.1 ? 'good' : wordCount <= targetWordCount * 1.3 ? 'warning' : 'bad'}`;
 
@@ -381,7 +330,7 @@ function showResults(text, durationSeconds) {
     saveToHistory(wordCount, fillerCount, pace, longestSentence);
 }
 
-// Grok API integration
+// Groq API for rewrite
 async function getRewrite() {
     const apiKey = localStorage.getItem('grok_api_key');
 
@@ -554,27 +503,6 @@ function saveSettings() {
     closeSettings();
 }
 
-// Event listeners
-recordBtn.addEventListener('click', toggleRecording);
-newQuestionBtn.addEventListener('click', loadNewQuestion);
-resetBtn.addEventListener('click', () => {
-    resultsSection.classList.add('hidden');
-    resetBtn.classList.add('hidden');
-    timer.classList.add('hidden');
-    transcript = '';
-});
-settingsBtn.addEventListener('click', openSettings);
-closeSettingsBtn.addEventListener('click', closeSettings);
-saveSettingsBtn.addEventListener('click', saveSettings);
-rewriteBtn.addEventListener('click', getRewrite);
-
-// Close modal on background click
-settingsModal.addEventListener('click', (e) => {
-    if (e.target === settingsModal) {
-        closeSettings();
-    }
-});
-
 // Text-to-speech for crisp version
 function speakCrispVersion() {
     const text = rewriteText.textContent;
@@ -592,7 +520,7 @@ function speakCrispVersion() {
     const utterance = new SpeechSynthesisUtterance(text);
 
     // Configure for clear American English
-    utterance.rate = 0.95;  // Slightly slower for clarity
+    utterance.rate = 0.95;
     utterance.pitch = 1;
     utterance.volume = 1;
 
@@ -624,6 +552,27 @@ function speakCrispVersion() {
     window.speechSynthesis.speak(utterance);
 }
 
+// Event listeners
+recordBtn.addEventListener('click', toggleRecording);
+newQuestionBtn.addEventListener('click', loadNewQuestion);
+resetBtn.addEventListener('click', () => {
+    resultsSection.classList.add('hidden');
+    resetBtn.classList.add('hidden');
+    timer.classList.add('hidden');
+    transcript = '';
+});
+settingsBtn.addEventListener('click', openSettings);
+closeSettingsBtn.addEventListener('click', closeSettings);
+saveSettingsBtn.addEventListener('click', saveSettings);
+rewriteBtn.addEventListener('click', getRewrite);
+
+// Close modal on background click
+settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) {
+        closeSettings();
+    }
+});
+
 // Load voices (needed for some browsers)
 if (window.speechSynthesis) {
     window.speechSynthesis.getVoices();
@@ -636,6 +585,5 @@ speakBtn.addEventListener('click', speakCrispVersion);
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    initSpeechRecognition();
     updateHistoryDisplay();
 });
