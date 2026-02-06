@@ -93,26 +93,41 @@ async function startRecording() {
         showStatus('Requesting microphone...');
 
         const stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                sampleRate: 16000
-            }
+            audio: true
         });
 
         showStatus('Microphone ready! Speak now...');
 
-        // Determine supported mime type
-        let mimeType = 'audio/webm';
-        if (MediaRecorder.isTypeSupported('audio/webm')) {
-            mimeType = 'audio/webm';
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-            mimeType = 'audio/mp4';
-        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-            mimeType = 'audio/ogg';
+        // Determine supported mime type - iOS Safari uses mp4/aac
+        let mimeType = '';
+        let fileExtension = 'webm';
+
+        // Check supported formats in order of preference for Whisper API
+        const formats = [
+            { mime: 'audio/webm;codecs=opus', ext: 'webm' },
+            { mime: 'audio/webm', ext: 'webm' },
+            { mime: 'audio/mp4', ext: 'm4a' },
+            { mime: 'audio/aac', ext: 'aac' },
+            { mime: 'audio/ogg;codecs=opus', ext: 'ogg' },
+            { mime: 'audio/wav', ext: 'wav' },
+            { mime: '', ext: 'webm' } // default fallback
+        ];
+
+        for (const format of formats) {
+            if (format.mime === '' || MediaRecorder.isTypeSupported(format.mime)) {
+                mimeType = format.mime;
+                fileExtension = format.ext;
+                console.log('Using audio format:', mimeType || 'default');
+                break;
+            }
         }
 
-        mediaRecorder = new MediaRecorder(stream, { mimeType });
+        // Create MediaRecorder with or without explicit mimeType
+        const recorderOptions = mimeType ? { mimeType } : {};
+        mediaRecorder = new MediaRecorder(stream, recorderOptions);
+
+        // Store extension for later use
+        mediaRecorder.fileExtension = fileExtension;
         audioChunks = [];
 
         mediaRecorder.ondataavailable = (event) => {
@@ -126,8 +141,10 @@ async function startRecording() {
             stream.getTracks().forEach(track => track.stop());
 
             if (audioChunks.length > 0) {
-                const audioBlob = new Blob(audioChunks, { type: mimeType });
-                await transcribeAudio(audioBlob);
+                const blobType = mimeType || 'audio/webm';
+                const audioBlob = new Blob(audioChunks, { type: blobType });
+                console.log('Audio blob size:', audioBlob.size, 'type:', blobType);
+                await transcribeAudio(audioBlob, mediaRecorder.fileExtension);
             } else {
                 showStatus('No audio recorded. Please try again.');
             }
@@ -176,7 +193,7 @@ function stopRecording() {
 }
 
 // Transcribe audio using Groq Whisper API
-async function transcribeAudio(audioBlob) {
+async function transcribeAudio(audioBlob, fileExtension = 'webm') {
     const apiKey = localStorage.getItem('grok_api_key');
 
     if (!apiKey) {
@@ -188,9 +205,12 @@ async function transcribeAudio(audioBlob) {
     showStatus('Transcribing with AI...');
 
     try {
-        // Create form data with audio file
+        // Create form data with audio file - use correct extension for iOS
+        const filename = `recording.${fileExtension}`;
+        console.log('Sending audio file:', filename, 'size:', audioBlob.size);
+
         const formData = new FormData();
-        formData.append('file', audioBlob, 'recording.webm');
+        formData.append('file', audioBlob, filename);
         formData.append('model', 'whisper-large-v3');
         formData.append('language', 'en');
         formData.append('response_format', 'text');
