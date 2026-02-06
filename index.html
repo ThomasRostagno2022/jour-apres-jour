@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Voice Drill</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Voice Drill">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+    <!-- Password Screen -->
+    <div id="password-screen" class="password-screen">
+        <div class="password-card">
+            <h2>🎤 Voice Drill</h2>
+            <p>Enter password to continue</p>
+            <input type="password" id="password-input" placeholder="Password" autofocus>
+            <button id="password-submit" class="btn-primary">Enter</button>
+            <p id="password-error" class="password-error hidden">Incorrect password</p>
+        </div>
+    </div>
+
+    <div class="container hidden" id="main-app">
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Settings</h2>
+                <label for="api-key">Groq API Key</label>
+                <input type="password" id="api-key" placeholder="Enter your Groq API key">
+                <p class="hint">Get your free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></p>
+                <div class="modal-buttons">
+                    <button id="save-settings" class="btn-primary">Save</button>
+                    <button id="close-settings" class="btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header>
+            <h1>Voice Drill</h1>
+            <button id="settings-btn" class="icon-btn">⚙️</button>
+        </header>
+
+        <!-- Question Card -->
+        <div id="question-card" class="card">
+            <div class="question-category" id="question-category">Behavioral</div>
+            <p id="question-text">Tap "New Question" to start your drill</p>
+            <div class="target-info">
+                <span>Target: <strong id="target-words">120</strong> words</span>
+                <span>Time: <strong id="target-time">90</strong>s max</span>
+            </div>
+        </div>
+
+        <!-- Recording Section -->
+        <div id="recording-section">
+            <div id="timer" class="hidden">
+                <span id="timer-display">01:30</span>
+            </div>
+            <button id="record-btn" class="record-button">
+                <span class="mic-icon">🎤</span>
+                <span id="record-label">Tap to Record</span>
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="hidden">
+            <div class="card">
+                <h3>Your Answer</h3>
+                <p id="transcript-text" class="transcript"></p>
+            </div>
+
+            <!-- Scorecard -->
+            <div class="card scorecard">
+                <h3>Scorecard</h3>
+                <div class="score-grid">
+                    <div class="score-item">
+                        <span class="score-label">Words</span>
+                        <span id="word-count" class="score-value">--</span>
+                        <span id="word-status" class="score-status">--</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Fillers</span>
+                        <span id="filler-count" class="score-value">--</span>
+                        <span id="filler-status" class="score-status">--</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Pace</span>
+                        <span id="pace-value" class="score-value">--</span>
+                        <span id="pace-status" class="score-status">--</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Longest Sentence</span>
+                        <span id="longest-sentence" class="score-value">--</span>
+                        <span id="sentence-status" class="score-status">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fillers Detail -->
+            <div id="fillers-detail" class="card hidden">
+                <h3>Fillers Found</h3>
+                <p id="fillers-list"></p>
+            </div>
+
+            <!-- AI Rewrite -->
+            <div class="card">
+                <button id="rewrite-btn" class="btn-primary full-width">Get Crisp Version (AI)</button>
+                <div id="rewrite-loading" class="hidden">
+                    <div class="spinner"></div>
+                    <span>Generating crisp version...</span>
+                </div>
+                <div id="rewrite-result" class="hidden">
+                    <h3>Crisp Version</h3>
+                    <p id="rewrite-text" class="transcript crisp"></p>
+                    <div class="rewrite-stats">
+                        <span id="rewrite-word-count"></span>
+                        <span id="rewrite-reduction"></span>
+                    </div>
+                    <button id="speak-btn" class="btn-speak">🔊 Listen</button>
+                </div>
+                <div id="rewrite-error" class="hidden">
+                    <p class="error-text"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions">
+            <button id="new-question-btn" class="btn-primary">New Question</button>
+            <button id="reset-btn" class="btn-secondary hidden">Try Again</button>
+        </div>
+
+        <!-- History Section -->
+        <div id="history-section" class="card">
+            <h3>Recent Sessions</h3>
+            <div id="history-list">
+                <p class="empty-state">No sessions yet. Start your first drill!</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="questions.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Simple password protection
+        const PASSWORD_HASH = '5ff893f4f29f867ddc707ae049be834394f2ea79f8de7e889a3ee355ab01a119';
+
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function checkPassword() {
+            const input = document.getElementById('password-input').value;
+            const hash = await hashPassword(input);
+
+            if (hash === PASSWORD_HASH || localStorage.getItem('voice_drill_auth') === 'true') {
+                localStorage.setItem('voice_drill_auth', 'true');
+                document.getElementById('password-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+            } else {
+                document.getElementById('password-error').classList.remove('hidden');
+                document.getElementById('password-input').value = '';
+            }
+        }
+
+        // Check if already authenticated
+        if (localStorage.getItem('voice_drill_auth') === 'true') {
+            document.getElementById('password-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+        }
+
+        document.getElementById('password-submit').addEventListener('click', checkPassword);
+        document.getElementById('password-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkPassword();
+        });
+    </script>
+</body>
+</html>
