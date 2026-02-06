@@ -28,9 +28,15 @@
         <div id="settings-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>Settings</h2>
+
                 <label for="api-key">Groq API Key</label>
                 <input type="password" id="api-key" placeholder="Enter your Groq API key">
                 <p class="hint">Get your free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></p>
+
+                <label for="elevenlabs-key">ElevenLabs API Key (optional)</label>
+                <input type="password" id="elevenlabs-key" placeholder="For natural AI voice">
+                <p class="hint">Free: 10k chars/month at <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a></p>
+
                 <div class="modal-buttons">
                     <button id="save-settings" class="btn-primary">Save</button>
                     <button id="close-settings" class="btn-secondary">Cancel</button>

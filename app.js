@@ -560,9 +560,13 @@ function loadNewQuestion() {
 }
 
 // Settings
+const elevenlabsKeyInput = document.getElementById('elevenlabs-key');
+
 function openSettings() {
     const savedKey = localStorage.getItem('grok_api_key') || '';
+    const savedElevenLabsKey = localStorage.getItem('elevenlabs_api_key') || '';
     apiKeyInput.value = savedKey;
+    if (elevenlabsKeyInput) elevenlabsKeyInput.value = savedElevenLabsKey;
     settingsModal.classList.remove('hidden');
 }
 
@@ -577,23 +581,125 @@ function saveSettings() {
     } else {
         localStorage.removeItem('grok_api_key');
     }
+
+    // Save ElevenLabs key
+    if (elevenlabsKeyInput) {
+        const elevenLabsKey = elevenlabsKeyInput.value.trim();
+        if (elevenLabsKey) {
+            localStorage.setItem('elevenlabs_api_key', elevenLabsKey);
+        } else {
+            localStorage.removeItem('elevenlabs_api_key');
+        }
+    }
+
     closeSettings();
 }
 
+// Audio player for ElevenLabs
+let audioPlayer = null;
+
 // Text-to-speech for crisp version
-function speakCrispVersion() {
+async function speakCrispVersion() {
     const text = rewriteText.textContent;
 
     if (!text) return;
 
     // Stop if already speaking
     if (isSpeaking) {
+        if (audioPlayer) {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            audioPlayer = null;
+        }
         window.speechSynthesis.cancel();
         isSpeaking = false;
         speakBtn.textContent = '🔊 Listen';
         return;
     }
 
+    const elevenLabsKey = localStorage.getItem('elevenlabs_api_key');
+
+    // Use ElevenLabs if key is available
+    if (elevenLabsKey) {
+        await speakWithElevenLabs(text, elevenLabsKey);
+    } else {
+        speakWithBrowser(text);
+    }
+}
+
+// ElevenLabs TTS (natural voice)
+async function speakWithElevenLabs(text, apiKey) {
+    speakBtn.textContent = '⏳ Loading...';
+
+    try {
+        // Using "Rachel" voice - professional American female
+        // Other good options: "Drew" (male), "Clyde" (male), "Domi" (female)
+        const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': apiKey
+            },
+            body: JSON.stringify({
+                text: text,
+                model_id: 'eleven_monolingual_v1',
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75,
+                    style: 0.0,
+                    use_speaker_boost: true
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            console.error('ElevenLabs error:', error);
+            // Fallback to browser TTS
+            speakWithBrowser(text);
+            return;
+        }
+
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        audioPlayer = new Audio(audioUrl);
+
+        audioPlayer.onplay = () => {
+            isSpeaking = true;
+            speakBtn.textContent = '⏹️ Stop';
+        };
+
+        audioPlayer.onended = () => {
+            isSpeaking = false;
+            speakBtn.textContent = '🔊 Listen';
+            URL.revokeObjectURL(audioUrl);
+            audioPlayer = null;
+        };
+
+        audioPlayer.onerror = () => {
+            isSpeaking = false;
+            speakBtn.textContent = '🔊 Listen';
+            URL.revokeObjectURL(audioUrl);
+            audioPlayer = null;
+            // Fallback to browser TTS
+            speakWithBrowser(text);
+        };
+
+        audioPlayer.play();
+
+    } catch (error) {
+        console.error('ElevenLabs TTS error:', error);
+        speakBtn.textContent = '🔊 Listen';
+        // Fallback to browser TTS
+        speakWithBrowser(text);
+    }
+}
+
+// Browser TTS fallback
+function speakWithBrowser(text) {
     const utterance = new SpeechSynthesisUtterance(text);
 
     // Configure for clear American English
