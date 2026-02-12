@@ -1,11 +1,11 @@
 {
-    "name": "Voice Drill",
-    "short_name": "VoiceDrill",
-    "description": "5-minute voice practice for crisp communication",
+    "name": "Jour apr\u00e8s Jour",
+    "short_name": "JourApr\u00e8sJour",
+    "description": "Pratique ton fran\u00e7ais chaque jour avec des exercices vari\u00e9s",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#f3f4f6",
-    "theme_color": "#2563eb",
+    "background_color": "#fdf4ff",
+    "theme_color": "#8b5cf6",
     "icons": [
         {
             "src": "icon-192.png",

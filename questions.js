@@ -1,878 +1,819 @@
-const QUESTIONS = [
-    // ========================================
-    // BEHAVIORAL - Core Stories (15 questions)
-    // ========================================
-    {
-        category: "Behavioral",
-        question: "Tell me about yourself and your background.",
-        targetWords: 150,
-        targetTime: 90
-    },
-    {
-        category: "Behavioral",
-        question: "Tell me about a project you're most proud of.",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Behavioral",
-        question: "Tell me about a time you failed. What did you learn?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Describe a time you influenced a senior leader who disagreed with you.",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Behavioral",
-        question: "Tell me about a time you had to deliver bad news to leadership.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Describe a situation where you had to make a decision with incomplete data.",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Behavioral",
-        question: "Tell me about a time you had to get alignment across multiple stakeholders.",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Behavioral",
-        question: "Describe a time you changed someone's mind with data.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Tell me about a time you inherited a project or analysis you thought was wrong.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Describe a situation where you had to prioritize competing demands.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Tell me about a time you had to learn something new quickly to solve a problem.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Describe a time when you received critical feedback. How did you respond?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Tell me about a time you went above and beyond for a customer or stakeholder.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Describe a situation where you had to work with someone difficult.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Behavioral",
-        question: "Tell me about a time you took initiative without being asked.",
-        targetWords: 100,
-        targetTime: 75
-    },
+const ACTIVITY_TYPES = {
+    CONVERSATION: 'conversation',
+    SYNONYMS: 'synonyms',
+    ANTONYMS: 'antonyms',
+    SENTENCE_BUILDING: 'sentence_building',
+    DESCRIBE_SCENE: 'describe_scene',
+    FILL_BLANK: 'fill_blank'
+};
 
-    // ========================================
-    // MOTIVATION & FIT (10 questions)
-    // ========================================
+const ACTIVITIES = [
+    // ============================
+    // CONVERSATION - Vie Personnelle
+    // ============================
     {
-        category: "Motivation",
-        question: "Why this company? Why this role? Why now?",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Motivation",
-        question: "This is an IC role. You've managed teams. Are you OK with that?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'Parle-moi de ta famille. Qui sont les personnes les plus importantes pour toi ?',
+        hint: 'Tell me about your family. Who are the most important people to you?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Motivation",
-        question: "What type of leader do you work best with?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'D\u00e9cris ton/ta meilleur(e) ami(e). Pourquoi cette personne compte autant pour toi ?',
+        hint: 'Describe your best friend. Why does this person matter so much to you?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Motivation",
-        question: "What frustrates you most in a role like this?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'Quel est ton plus beau souvenir d\u2019enfance ?',
+        hint: 'What is your most beautiful childhood memory?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Motivation",
-        question: "Where do you see yourself in 3-5 years?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'Si tu pouvais changer une chose dans ta vie, qu\u2019est-ce que ce serait ?',
+        hint: 'If you could change one thing in your life, what would it be?',
+        targetWords: 35,
         targetTime: 60
     },
     {
-        category: "Motivation",
-        question: "What's the most important thing for you in your next role?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'Raconte-moi un moment o\u00f9 tu as \u00e9t\u00e9 vraiment fi\u00e8re de toi.',
+        hint: 'Tell me about a moment when you were really proud of yourself.',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Motivation",
-        question: "What would make you leave a job?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'Qu\u2019est-ce qui te rend heureuse au quotidien ?',
+        hint: 'What makes you happy on a daily basis?',
+        targetWords: 35,
         targetTime: 60
     },
     {
-        category: "Motivation",
-        question: "How do you stay motivated when work gets repetitive?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'D\u00e9cris l\u2019endroit o\u00f9 tu as grandi. Qu\u2019est-ce que tu aimais l\u00e0-bas ?',
+        hint: 'Describe the place where you grew up. What did you love about it?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Motivation",
-        question: "What's a professional accomplishment you're still working toward?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'Quelle le\u00e7on importante as-tu apprise r\u00e9cemment ?',
+        hint: 'What important lesson have you learned recently?',
+        targetWords: 35,
         targetTime: 60
     },
     {
-        category: "Motivation",
-        question: "How do you define success in your career?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'Parle-moi d\u2019une personne qui t\u2019inspire. Pourquoi ?',
+        hint: 'Tell me about a person who inspires you. Why?',
+        targetWords: 40,
+        targetTime: 60
+    },
+    {
+        type: 'conversation',
+        category: 'Vie Personnelle',
+        prompt: 'Qu\u2019est-ce que tu aimerais accomplir dans les cinq prochaines ann\u00e9es ?',
+        hint: 'What would you like to accomplish in the next five years?',
+        targetWords: 40,
         targetTime: 60
     },
 
-    // ========================================
-    // GTM STRATEGY (12 questions)
-    // ========================================
+    // ============================
+    // CONVERSATION - Vie Quotidienne
+    // ============================
     {
-        category: "GTM Strategy",
-        question: "How would you diagnose a GTM problem you've never seen before?",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "GTM Strategy",
-        question: "How do you think about coverage models?",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "GTM Strategy",
-        question: "How would you approach building a business case with unreliable data?",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "GTM Strategy",
-        question: "What's the biggest GTM lever to go from $5B to $10B?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "GTM Strategy",
-        question: "How do you think about land vs. expand motions differently?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "GTM Strategy",
-        question: "How would you think about GTM for a brand new product vs. a mature one?",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "GTM Strategy",
-        question: "When would you use partners vs. direct sales?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "GTM Strategy",
-        question: "How do you think about pricing strategy for a new market?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "GTM Strategy",
-        question: "What metrics matter most when evaluating GTM effectiveness?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "GTM Strategy",
-        question: "How would you approach entering a new geographic market?",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "GTM Strategy",
-        question: "How do you balance short-term revenue vs. long-term market positioning?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "GTM Strategy",
-        question: "What's your framework for competitive positioning?",
-        targetWords: 100,
-        targetTime: 75
-    },
-
-    // ========================================
-    // SITUATIONAL (12 questions)
-    // ========================================
-    {
-        category: "Situational",
-        question: "A Regional VP says 60% of rep time goes to 15% of revenue. What do you do?",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Situational",
-        question: "The CRO disagrees with your recommendation. How do you handle it?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Situational",
-        question: "I give you 3 urgent projects at once. How do you prioritize?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Situational",
-        question: "Walk me through how you'd structure a Q3 executive GTM review.",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Situational",
-        question: "How would you approach your first 90 days in this role?",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Situational",
-        question: "How would you work with Rev Ops vs. the BU GTM teams?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Situational",
-        question: "Your analysis shows the sales team is underperforming. How do you present this?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Situational",
-        question: "A project deadline moved up by 2 weeks. What do you do?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'D\u00e9cris ta routine du matin. Que fais-tu en premier ?',
+        hint: 'Describe your morning routine. What do you do first?',
+        targetWords: 35,
         targetTime: 60
     },
     {
-        category: "Situational",
-        question: "Two executives give you conflicting priorities. How do you handle it?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Situational",
-        question: "Your recommendation was implemented but isn't working. What now?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Situational",
-        question: "A key team member resigns mid-project. How do you adapt?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Situational",
-        question: "You discover a significant error in a report that's already been shared. What do you do?",
-        targetWords: 100,
-        targetTime: 75
-    },
-
-    // ========================================
-    // DATA & ANALYSIS (10 questions)
-    // ========================================
-    {
-        category: "Data & Analysis",
-        question: "Tell me about building a model with bad or incomplete data.",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Data & Analysis",
-        question: "How do you validate assumptions when you don't have historical data?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Data & Analysis",
-        question: "Walk me through how you'd build a sales forecasting model.",
-        targetWords: 120,
-        targetTime: 90
-    },
-    {
-        category: "Data & Analysis",
-        question: "How do you explain a complex analysis to a non-technical stakeholder?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Data & Analysis",
-        question: "What's your process for identifying the root cause of a business problem?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Data & Analysis",
-        question: "How do you know when you have enough data to make a recommendation?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'Qu\u2019est-ce que tu as fait ce week-end ?',
+        hint: 'What did you do this weekend?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Data & Analysis",
-        question: "Describe a time when data told a different story than expected.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Data & Analysis",
-        question: "How do you balance speed vs. accuracy in your analysis?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'Quel est ton plat pr\u00e9f\u00e9r\u00e9 \u00e0 cuisiner ? Explique la recette.',
+        hint: 'What is your favorite dish to cook? Explain the recipe.',
+        targetWords: 45,
         targetTime: 60
     },
     {
-        category: "Data & Analysis",
-        question: "What's your approach to presenting data that contradicts popular belief?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Data & Analysis",
-        question: "How do you ensure your analysis is actionable, not just informative?",
-        targetWords: 100,
-        targetTime: 75
-    },
-
-    // ========================================
-    // PRESENTATIONS & PUBLIC SPEAKING (10 questions)
-    // ========================================
-    {
-        category: "Presentation",
-        question: "You have 2 minutes to pitch a new initiative to your CEO. Go.",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'Comment est ta journ\u00e9e typique au travail ?',
+        hint: 'What does a typical day at work look like for you?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Presentation",
-        question: "Explain a complex technical concept to a non-technical audience.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Presentation",
-        question: "You're presenting quarterly results. Revenue is down 15%. How do you frame it?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Presentation",
-        question: "Deliver the opening of a team all-hands meeting to energize the room.",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'D\u00e9cris ton quartier. Qu\u2019est-ce que tu aimes et n\u2019aimes pas ?',
+        hint: 'Describe your neighborhood. What do you like and dislike?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Presentation",
-        question: "Summarize a 50-page report in 90 seconds for an executive.",
-        targetWords: 90,
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'Qu\u2019est-ce que tu fais pour te d\u00e9tendre apr\u00e8s une longue journ\u00e9e ?',
+        hint: 'What do you do to relax after a long day?',
+        targetWords: 35,
         targetTime: 60
     },
     {
-        category: "Presentation",
-        question: "Present a controversial recommendation to a skeptical audience.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Presentation",
-        question: "You're asked to present without your slides. Give the key points.",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'Raconte ta derni\u00e8re sortie au restaurant. Qu\u2019as-tu command\u00e9 ?',
+        hint: 'Tell me about your last time eating out. What did you order?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Presentation",
-        question: "Introduce a new team member to the company during an all-hands.",
-        targetWords: 60,
-        targetTime: 45
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'Quel temps fait-il aujourd\u2019hui ? Comment le temps affecte-t-il ton humeur ?',
+        hint: 'What is the weather like today? How does the weather affect your mood?',
+        targetWords: 35,
+        targetTime: 60
     },
     {
-        category: "Presentation",
-        question: "Present three options for solving a problem with your recommendation.",
-        targetWords: 120,
-        targetTime: 90
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'D\u00e9cris les derni\u00e8res courses que tu as faites. Qu\u2019as-tu achet\u00e9 ?',
+        hint: 'Describe your last grocery shopping trip. What did you buy?',
+        targetWords: 40,
+        targetTime: 60
     },
     {
-        category: "Presentation",
-        question: "Kick off a project meeting by explaining the goals and timeline.",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Vie Quotidienne',
+        prompt: 'Quelle s\u00e9rie ou quel film regardes-tu en ce moment ? Pourquoi ?',
+        hint: 'What show or movie are you watching right now? Why?',
+        targetWords: 35,
         targetTime: 60
     },
 
-    // ========================================
-    // MEETINGS & DISCUSSIONS (10 questions)
-    // ========================================
+    // ============================
+    // CONVERSATION - Cr\u00e9atif & Fun
+    // ============================
     {
-        category: "Meeting",
-        question: "You disagree with your manager's direction in a team meeting. What do you say?",
-        targetWords: 80,
+        type: 'conversation',
+        category: 'Imaginaire',
+        prompt: 'Si tu pouvais vivre dans n\u2019importe quel pays, lequel choisirais-tu et pourquoi ?',
+        hint: 'If you could live in any country, which would you choose and why?',
+        targetWords: 40,
         targetTime: 60
     },
     {
-        category: "Meeting",
-        question: "A meeting is going off-track. How do you redirect it professionally?",
-        targetWords: 60,
-        targetTime: 45
+        type: 'conversation',
+        category: 'Imaginaire',
+        prompt: 'D\u00e9cris ton restaurant id\u00e9al : la d\u00e9coration, le menu, l\u2019ambiance.',
+        hint: 'Describe your ideal restaurant: the decor, the menu, the atmosphere.',
+        targetWords: 45,
+        targetTime: 60
     },
     {
-        category: "Meeting",
-        question: "You need to interrupt a long-winded colleague to make your point. How?",
-        targetWords: 50,
+        type: 'conversation',
+        category: 'Imaginaire',
+        prompt: 'Si tu gagnais au loto demain, que ferais-tu en premier ?',
+        hint: 'If you won the lottery tomorrow, what would you do first?',
+        targetWords: 40,
+        targetTime: 60
+    },
+    {
+        type: 'conversation',
+        category: 'Imaginaire',
+        prompt: 'Tu peux d\u00eener avec n\u2019importe quelle personne, vivante ou morte. Qui choisis-tu et pourquoi ?',
+        hint: 'You can have dinner with anyone, alive or dead. Who do you choose and why?',
+        targetWords: 40,
+        targetTime: 60
+    },
+    {
+        type: 'conversation',
+        category: 'Imaginaire',
+        prompt: 'Si tu pouvais avoir un superpouvoir, lequel choisirais-tu ?',
+        hint: 'If you could have a superpower, which one would you choose?',
+        targetWords: 35,
+        targetTime: 60
+    },
+    {
+        type: 'conversation',
+        category: 'Opinions',
+        prompt: 'Qu\u2019est-ce que tu penses des r\u00e9seaux sociaux ? Sont-ils utiles ou dangereux ?',
+        hint: 'What do you think about social media? Are they useful or dangerous?',
+        targetWords: 45,
+        targetTime: 60
+    },
+    {
+        type: 'conversation',
+        category: 'Opinions',
+        prompt: 'Quel est le meilleur conseil qu\u2019on t\u2019ait jamais donn\u00e9 ?',
+        hint: 'What is the best advice anyone has ever given you?',
+        targetWords: 35,
+        targetTime: 60
+    },
+    {
+        type: 'conversation',
+        category: 'Opinions',
+        prompt: 'Pr\u00e9f\u00e8res-tu la ville ou la campagne ? Explique ton choix.',
+        hint: 'Do you prefer the city or the countryside? Explain your choice.',
+        targetWords: 40,
+        targetTime: 60
+    },
+    {
+        type: 'conversation',
+        category: 'Culture',
+        prompt: 'Quel est le dernier livre que tu as lu ? Raconte l\u2019histoire bri\u00e8vement.',
+        hint: 'What is the last book you read? Briefly tell the story.',
+        targetWords: 40,
+        targetTime: 60
+    },
+    {
+        type: 'conversation',
+        category: 'Culture',
+        prompt: 'D\u00e9cris ton dernier voyage. Qu\u2019est-ce qui t\u2019a marqu\u00e9 ?',
+        hint: 'Describe your last trip. What stood out to you?',
+        targetWords: 45,
+        targetTime: 60
+    },
+
+    // ============================
+    // SYNONYMES
+    // ============================
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Content(e)',
+        hint: 'happy',
+        expectedExamples: ['heureux', 'joyeux', 'ravi', 'enchant\u00e9', 'satisfait', '\u00e9panoui'],
+        targetWords: 5,
         targetTime: 30
     },
     {
-        category: "Meeting",
-        question: "Someone asks for your opinion on a topic you're unprepared for. What do you say?",
-        targetWords: 70,
-        targetTime: 45
-    },
-    {
-        category: "Meeting",
-        question: "You're asked to give a quick status update on your project. 60 seconds.",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Meeting",
-        question: "How do you facilitate a brainstorming session effectively?",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Meeting",
-        question: "Someone in the meeting is dominating the conversation. How do you handle it?",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Meeting",
-        question: "You need to wrap up a meeting that's running over time. What do you say?",
-        targetWords: 50,
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Beau / Belle',
+        hint: 'beautiful',
+        expectedExamples: ['joli', 'magnifique', 'splendide', 'superbe', 'ravissant', 'charmant'],
+        targetWords: 5,
         targetTime: 30
     },
     {
-        category: "Meeting",
-        question: "How do you get a quiet team member to share their perspective?",
-        targetWords: 60,
-        targetTime: 45
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Triste',
+        hint: 'sad',
+        expectedExamples: ['malheureux', 'm\u00e9lancolique', 'chagrin\u00e9', 'abattu', 'morose', 'd\u00e9prim\u00e9'],
+        targetWords: 5,
+        targetTime: 30
     },
     {
-        category: "Meeting",
-        question: "You join a meeting late. How do you catch up without disrupting?",
-        targetWords: 50,
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Rapide',
+        hint: 'fast',
+        expectedExamples: ['vite', 'v\u00e9loce', 'prompt', 'press\u00e9', 'expéditif', 'vif'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Manger',
+        hint: 'to eat',
+        expectedExamples: ['d\u00e9vorer', 'se nourrir', 'd\u00e9guster', 'avaler', 'grignoter', 'se r\u00e9galer'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Maison',
+        hint: 'house',
+        expectedExamples: ['demeure', 'logement', 'habitation', 'domicile', 'r\u00e9sidence', 'foyer'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Parler',
+        hint: 'to speak',
+        expectedExamples: ['discuter', 'bavarder', 'converser', 's\u2019exprimer', 'dire', 'raconter'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Difficult',
+        hint: 'difficult',
+        expectedExamples: ['dur', 'compliqu\u00e9', 'ardu', 'p\u00e9nible', 'complexe', '\u00e9prouvant'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Int\u00e9ressant',
+        hint: 'interesting',
+        expectedExamples: ['captivant', 'passionnant', 'fascinant', 'stimulant', 'enrichissant', 'attrayant'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Commencer',
+        hint: 'to begin',
+        expectedExamples: ['d\u00e9buter', 'entamer', 'amorcer', 'inaugurer', 'lancer', 'd\u00e9marrer'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Peur',
+        hint: 'fear',
+        expectedExamples: ['crainte', 'frayeur', 'terreur', 'angoisse', 'effroi', 'appréhension'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Travail',
+        hint: 'work',
+        expectedExamples: ['emploi', 'm\u00e9tier', 'profession', 'poste', 'activit\u00e9', 'boulot'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Gentil(le)',
+        hint: 'kind / nice',
+        expectedExamples: ['aimable', 'sympathique', 'bienveillant', 'attentionn\u00e9', 'doux', 'adorable'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Regarder',
+        hint: 'to look / to watch',
+        expectedExamples: ['observer', 'contempler', 'examiner', 'fixer', 'scruter', 'admirer'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'synonyms',
+        category: 'Synonymes',
+        prompt: 'Voyage',
+        hint: 'trip / journey',
+        expectedExamples: ['p\u00e9riple', 'excursion', 'exp\u00e9dition', 'escapade', 'trajet', 'randonn\u00e9e'],
+        targetWords: 5,
         targetTime: 30
     },
 
-    // ========================================
-    // NETWORKING & SMALL TALK (10 questions)
-    // ========================================
+    // ============================
+    // ANTONYMES
+    // ============================
     {
-        category: "Networking",
-        question: "Someone at a conference asks: 'So what do you do?' Give your elevator pitch.",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Networking",
-        question: "You meet a potential mentor. How do you introduce yourself and your goals?",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Networking",
-        question: "You're at a dinner with executives you don't know. Start a conversation.",
-        targetWords: 50,
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Grand(e)',
+        hint: 'big / tall',
+        expectedExamples: ['petit', 'minuscule', 'court', 'bas', 'modeste'],
+        targetWords: 5,
         targetTime: 30
     },
     {
-        category: "Networking",
-        question: "Someone you admire asks about your career journey. Tell your story.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Networking",
-        question: "You want to reconnect with someone you haven't spoken to in years. What do you say?",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Networking",
-        question: "How do you gracefully exit a conversation at a networking event?",
-        targetWords: 50,
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Chaud',
+        hint: 'hot',
+        expectedExamples: ['froid', 'frais', 'gel\u00e9', 'glac\u00e9', 'frigide'],
+        targetWords: 5,
         targetTime: 30
     },
     {
-        category: "Networking",
-        question: "You meet someone in a completely different industry. Find common ground.",
-        targetWords: 60,
-        targetTime: 45
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Riche',
+        hint: 'rich',
+        expectedExamples: ['pauvre', 'd\u00e9muni', 'modeste', 'fauch\u00e9', 'n\u00e9cessiteux'],
+        targetWords: 5,
+        targetTime: 30
     },
     {
-        category: "Networking",
-        question: "Ask for advice from a senior leader you just met without seeming presumptuous.",
-        targetWords: 60,
-        targetTime: 45
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Ancien',
+        hint: 'old / ancient',
+        expectedExamples: ['nouveau', 'moderne', 'r\u00e9cent', 'neuf', 'contemporain'],
+        targetWords: 5,
+        targetTime: 30
     },
     {
-        category: "Networking",
-        question: "Someone asks what you're working on. Make it sound interesting.",
-        targetWords: 70,
-        targetTime: 45
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'L\u00e9ger',
+        hint: 'light (weight)',
+        expectedExamples: ['lourd', 'pesant', 'massif', '\u00e9pais', 'dense'],
+        targetWords: 5,
+        targetTime: 30
     },
     {
-        category: "Networking",
-        question: "Follow up with someone you met briefly. What's your message?",
-        targetWords: 50,
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Aimer',
+        hint: 'to love',
+        expectedExamples: ['d\u00e9tester', 'ha\u00efr', 'abhorrer', 'ex\u00e9crer', 'm\u00e9priser'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Monter',
+        hint: 'to go up',
+        expectedExamples: ['descendre', 'baisser', 'tomber', 'chuter', 'd\u00e9gringoler'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Gagner',
+        hint: 'to win',
+        expectedExamples: ['perdre', '\u00e9chouer', 'rater', 'louper'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Bruyant',
+        hint: 'noisy',
+        expectedExamples: ['silencieux', 'calme', 'tranquille', 'paisible', 'discret'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'G\u00e9n\u00e9reux',
+        hint: 'generous',
+        expectedExamples: ['avare', '\u00e9go\u00efste', 'radin', 'pingre', 'mesquin'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Ouvrir',
+        hint: 'to open',
+        expectedExamples: ['fermer', 'clore', 'verrouiller', 'sceller', 'bloquer'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Courage',
+        hint: 'courage',
+        expectedExamples: ['l\u00e2chet\u00e9', 'peur', 'couardise', 'timidit\u00e9', 'faiblesse'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Facile',
+        hint: 'easy',
+        expectedExamples: ['difficile', 'dur', 'compliqu\u00e9', 'ardu', 'complexe'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Sucr\u00e9',
+        hint: 'sweet',
+        expectedExamples: ['sal\u00e9', 'amer', 'acide', 'aigre', '\u00e2pre'],
+        targetWords: 5,
+        targetTime: 30
+    },
+    {
+        type: 'antonyms',
+        category: 'Antonymes',
+        prompt: 'Accepter',
+        hint: 'to accept',
+        expectedExamples: ['refuser', 'rejeter', 'd\u00e9cliner', 'repousser', 'nier'],
+        targetWords: 5,
         targetTime: 30
     },
 
-    // ========================================
-    // DIFFICULT CONVERSATIONS (10 questions)
-    // ========================================
+    // ============================
+    // CONSTRUCTION DE PHRASES
+    // ============================
     {
-        category: "Difficult Conversation",
-        question: "You need to tell a direct report their performance is not meeting expectations.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Difficult Conversation",
-        question: "A client is unhappy with a deliverable. How do you address their concerns?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Difficult Conversation",
-        question: "You have to say no to a request from a senior leader. What do you say?",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Difficult Conversation",
-        question: "A colleague takes credit for your work. How do you address it?",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Difficult Conversation",
-        question: "You made a mistake that cost the company money. How do you own it?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Difficult Conversation",
-        question: "You need to ask for a raise. Make your case.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Difficult Conversation",
-        question: "A team member's behavior is affecting team morale. Address it.",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Difficult Conversation",
-        question: "You disagree with a decision that's already been made. How do you voice concerns?",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Difficult Conversation",
-        question: "A vendor isn't delivering as promised. How do you address it?",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Difficult Conversation",
-        question: "You need to deliver constructive criticism to a peer. How do you approach it?",
-        targetWords: 80,
-        targetTime: 60
-    },
-
-    // ========================================
-    // PERSUASION & INFLUENCE (10 questions)
-    // ========================================
-    {
-        category: "Persuasion",
-        question: "Convince your team to adopt a new tool they're resistant to.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Persuasion",
-        question: "You need a budget increase. Make your case to the CFO.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Persuasion",
-        question: "A stakeholder wants to go in a direction you think is wrong. Persuade them.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Persuasion",
-        question: "You need cross-functional teams to prioritize your project. How do you pitch it?",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Persuasion",
-        question: "Convince a skeptical audience that AI will benefit their workflow.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Persuasion",
-        question: "Pitch a risky idea that could have high reward.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Persuasion",
-        question: "Convince your manager to let you work on a passion project.",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Persuasion",
-        question: "You need to get buy-in from someone who has rejected this idea before.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Persuasion",
-        question: "Persuade a customer to expand their contract with you.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Persuasion",
-        question: "Convince leadership to invest in a long-term initiative with delayed ROI.",
-        targetWords: 100,
-        targetTime: 75
-    },
-
-    // ========================================
-    // EXPLANATIONS & TEACHING (8 questions)
-    // ========================================
-    {
-        category: "Explanation",
-        question: "Explain what your company does to someone at a party.",
-        targetWords: 60,
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'hier / aller / cin\u00e9ma / ami',
+        hint: 'Build a sentence using: yesterday / to go / cinema / friend',
+        targetWords: 15,
         targetTime: 45
     },
     {
-        category: "Explanation",
-        question: "A new hire asks you to explain how your team fits into the organization.",
-        targetWords: 80,
-        targetTime: 60
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'toujours / r\u00eaver / voyager / Japon',
+        hint: 'Build a sentence using: always / to dream / to travel / Japan',
+        targetWords: 15,
+        targetTime: 45
     },
     {
-        category: "Explanation",
-        question: "Break down a recent business decision and the reasoning behind it.",
-        targetWords: 100,
-        targetTime: 75
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'si / pouvoir / apprendre / instrument / guitare',
+        hint: 'Build a sentence using: if / to be able / to learn / instrument / guitar',
+        targetWords: 15,
+        targetTime: 45
     },
     {
-        category: "Explanation",
-        question: "Explain the difference between two similar concepts in your field.",
-        targetWords: 80,
-        targetTime: 60
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'demain / devoir / rendez-vous / m\u00e9decin',
+        hint: 'Build a sentence using: tomorrow / must / appointment / doctor',
+        targetWords: 15,
+        targetTime: 45
     },
     {
-        category: "Explanation",
-        question: "Describe a process you follow and why each step matters.",
-        targetWords: 100,
-        targetTime: 75
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'week-end / pr\u00e9f\u00e9rer / rester / maison / lire',
+        hint: 'Build a sentence using: weekend / to prefer / to stay / home / to read',
+        targetWords: 15,
+        targetTime: 45
     },
     {
-        category: "Explanation",
-        question: "Explain a trend in your industry to someone outside of it.",
-        targetWords: 80,
-        targetTime: 60
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'enfant / adorer / jouer / parc / apr\u00e8s / \u00e9cole',
+        hint: 'Build a sentence using: child / to love / to play / park / after / school',
+        targetWords: 15,
+        targetTime: 45
     },
     {
-        category: "Explanation",
-        question: "Teach a colleague a skill you're good at in 90 seconds.",
-        targetWords: 90,
-        targetTime: 60
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'bien que / fatig\u00e9 / continuer / travailler / projet',
+        hint: 'Build a sentence using: although / tired / to continue / to work / project',
+        targetWords: 15,
+        targetTime: 45
     },
     {
-        category: "Explanation",
-        question: "Explain why a project failed without placing blame.",
-        targetWords: 80,
-        targetTime: 60
-    },
-
-    // ========================================
-    // STORYTELLING (8 questions)
-    // ========================================
-    {
-        category: "Storytelling",
-        question: "Tell a story about a time something didn't go as planned but worked out.",
-        targetWords: 120,
-        targetTime: 90
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'avant / partir / v\u00e9rifier / fen\u00eatres / ferm\u00e9',
+        hint: 'Build a sentence using: before / to leave / to check / windows / closed',
+        targetWords: 15,
+        targetTime: 45
     },
     {
-        category: "Storytelling",
-        question: "Share an experience that shaped how you approach your work.",
-        targetWords: 100,
-        targetTime: 75
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'depuis / trois ans / habiter / Paris / adorer',
+        hint: 'Build a sentence using: for (since) / three years / to live / Paris / to love',
+        targetWords: 15,
+        targetTime: 45
     },
     {
-        category: "Storytelling",
-        question: "Describe a customer success story that demonstrates your product's value.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Storytelling",
-        question: "Tell a brief story to illustrate the importance of attention to detail.",
-        targetWords: 80,
-        targetTime: 60
-    },
-    {
-        category: "Storytelling",
-        question: "Share a lesson you learned from a mentor or leader you admire.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Storytelling",
-        question: "Tell a story about overcoming a significant obstacle in your career.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Storytelling",
-        question: "Share a story that demonstrates your problem-solving approach.",
-        targetWords: 100,
-        targetTime: 75
-    },
-    {
-        category: "Storytelling",
-        question: "Tell a story about a team accomplishment and your role in it.",
-        targetWords: 100,
-        targetTime: 75
+        type: 'sentence_building',
+        category: 'Construction de Phrases',
+        prompt: 'chaque / matin / boire / caf\u00e9 / balcon',
+        hint: 'Build a sentence using: every / morning / to drink / coffee / balcony',
+        targetWords: 15,
+        targetTime: 45
     },
 
-    // ========================================
-    // QUICK RESPONSES (10 questions)
-    // ========================================
+    // ============================
+    // DESCRIPTION
+    // ============================
     {
-        category: "Quick Response",
-        question: "Someone says 'I don't think that's a good idea.' Respond constructively.",
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'D\u00e9cris ce qui se passe dans un march\u00e9 le dimanche matin.',
+        hint: 'Describe what happens at a Sunday morning market.',
         targetWords: 50,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'D\u00e9cris ta chambre en d\u00e9tail. Qu\u2019est-ce qu\u2019on y trouve ?',
+        hint: 'Describe your bedroom in detail. What can you find there?',
+        targetWords: 45,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'Imagine que tu es dans un caf\u00e9 parisien. D\u00e9cris l\u2019atmosph\u00e8re.',
+        hint: 'Imagine you are in a Parisian caf\u00e9. Describe the atmosphere.',
+        targetWords: 50,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'D\u00e9cris ta saison pr\u00e9f\u00e9r\u00e9e. Qu\u2019est-ce que tu vois, sens, entends ?',
+        hint: 'Describe your favorite season. What do you see, smell, hear?',
+        targetWords: 50,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'D\u00e9cris un repas de f\u00eate en famille : la table, les plats, l\u2019ambiance.',
+        hint: 'Describe a family holiday meal: the table, the dishes, the atmosphere.',
+        targetWords: 50,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'Tu te prom\u00e8nes sur une plage au coucher du soleil. D\u00e9cris la sc\u00e8ne.',
+        hint: 'You are walking on a beach at sunset. Describe the scene.',
+        targetWords: 45,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'D\u00e9cris ton lieu de travail ou l\u2019endroit o\u00f9 tu \u00e9tudies.',
+        hint: 'Describe your workplace or where you study.',
+        targetWords: 45,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'D\u00e9cris un jour de pluie dans ta ville. Que font les gens ?',
+        hint: 'Describe a rainy day in your city. What are people doing?',
+        targetWords: 45,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'D\u00e9cris ton animal de compagnie (ou ton animal id\u00e9al).',
+        hint: 'Describe your pet (or your ideal pet).',
+        targetWords: 40,
+        targetTime: 60
+    },
+    {
+        type: 'describe_scene',
+        category: 'Description',
+        prompt: 'Tu arrives dans une nouvelle ville. D\u00e9cris tes premi\u00e8res impressions.',
+        hint: 'You arrive in a new city. Describe your first impressions.',
+        targetWords: 50,
+        targetTime: 60
+    },
+
+    // ============================
+    // COMPL\u00c8TE LA PHRASE
+    // ============================
+    {
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Je suis all\u00e9(e) au supermarch\u00e9 pour acheter ___.',
+        hint: 'I went to the supermarket to buy ___.',
+        targetWords: 10,
         targetTime: 30
     },
     {
-        category: "Quick Response",
-        question: "'Why should we trust you with this project?' Answer confidently.",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Quick Response",
-        question: "'What makes you different from others in your field?' Answer.",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Quick Response",
-        question: "'Can you do this by Friday?' (It's aggressive). How do you respond?",
-        targetWords: 50,
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Si j\u2019avais plus de temps libre, je ___.',
+        hint: 'If I had more free time, I would ___.',
+        targetWords: 15,
         targetTime: 30
     },
     {
-        category: "Quick Response",
-        question: "'I've heard mixed reviews about this approach.' Address the concern.",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Quick Response",
-        question: "'Why didn't this work?' Respond without being defensive.",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Quick Response",
-        question: "'What's your biggest weakness?' Answer authentically.",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Quick Response",
-        question: "'We've always done it this way.' Challenge the status quo respectfully.",
-        targetWords: 60,
-        targetTime: 45
-    },
-    {
-        category: "Quick Response",
-        question: "'That's not my job.' Your colleague says this. How do you respond?",
-        targetWords: 50,
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Le probl\u00e8me avec les r\u00e9seaux sociaux, c\u2019est que ___.',
+        hint: 'The problem with social media is that ___.',
+        targetWords: 15,
         targetTime: 30
     },
     {
-        category: "Quick Response",
-        question: "'We don't have budget for that.' Find another path forward.",
-        targetWords: 60,
-        targetTime: 45
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Quand j\u2019\u00e9tais petit(e), je r\u00eavais de ___.',
+        hint: 'When I was little, I dreamed of ___.',
+        targetWords: 12,
+        targetTime: 30
+    },
+    {
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'La chose la plus importante dans la vie, c\u2019est ___.',
+        hint: 'The most important thing in life is ___.',
+        targetWords: 15,
+        targetTime: 30
+    },
+    {
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Pour \u00eatre en bonne sant\u00e9, il faut ___.',
+        hint: 'To be in good health, you need to ___.',
+        targetWords: 15,
+        targetTime: 30
+    },
+    {
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Mon plus grand d\u00e9faut, c\u2019est que je ___.',
+        hint: 'My biggest flaw is that I ___.',
+        targetWords: 12,
+        targetTime: 30
+    },
+    {
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Ce week-end, je vais ___ parce que ___.',
+        hint: 'This weekend, I am going to ___ because ___.',
+        targetWords: 15,
+        targetTime: 30
+    },
+    {
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Si je pouvais recommencer ma journ\u00e9e, je ___.',
+        hint: 'If I could start my day over, I would ___.',
+        targetWords: 15,
+        targetTime: 30
+    },
+    {
+        type: 'fill_blank',
+        category: 'Compl\u00e8te la Phrase',
+        prompt: 'Apprendre le fran\u00e7ais est ___ parce que ___.',
+        hint: 'Learning French is ___ because ___.',
+        targetWords: 15,
+        targetTime: 30
     }
 ];
 
-// Filler words to detect (including French-influenced hesitations)
-const FILLER_WORDS = [
-    // Classic hesitation sounds
-    'uh', 'um', 'eh', 'ah', 'er', 'euh', 'mh', 'hmm', 'hm', 'mm',
-    // Verbal fillers
-    'like', 'you know', 'basically', 'actually', 'literally',
-    'right', 'so', 'well', 'i mean', 'kind of', 'sort of',
-    'honestly', 'obviously', 'definitely', 'probably',
-    'just', 'really', 'very', 'stuff', 'things',
-    'anyway', 'anyways',
-    // Additional fillers
-    'okay so', 'and so', 'but like', 'so like', 'i think', 'i guess',
-    'in fact', 'to be honest', 'at the end of the day'
+// French filler words to detect
+const FRENCH_FILLER_WORDS = [
+    'euh', 'ben', 'bah', 'genre', 'en fait', 'du coup',
+    'voil\u00e0', 'quoi', 'bon', 'donc', 'alors',
+    'tu vois', 'tu sais', 'enfin', 'c\u2019est-\u00e0-dire'
 ];
+
+// Activity type display names
+const ACTIVITY_TYPE_LABELS = {
+    conversation: 'Conversation',
+    synonyms: 'Synonymes',
+    antonyms: 'Antonymes',
+    sentence_building: 'Construction',
+    describe_scene: 'Description',
+    fill_blank: 'Compl\u00e8te'
+};
+
+// Activity type icons
+const ACTIVITY_TYPE_ICONS = {
+    conversation: '\ud83d\udcac',
+    synonyms: '\ud83d\udd04',
+    antonyms: '\u2194\ufe0f',
+    sentence_building: '\ud83e\udde9',
+    describe_scene: '\ud83c\udfa8',
+    fill_blank: '\u270d\ufe0f'
+};

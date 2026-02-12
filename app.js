@@ -4,55 +4,47 @@ const DEFAULT_GROQ_KEY = ['gsk_DJtowUxnkrNBdieWUGDG', 'WGdyb3FYltJH62LU8Uqd7kNB3
 const DEFAULT_ELEVENLABS_KEY = ['sk_116ea5a2737312a826b3', '447f0f2ff466fe4ac8f08941870a'].join('');
 
 // State
-let currentQuestion = null;
+let currentActivity = null;
 let isRecording = false;
 let mediaRecorder = null;
 let audioChunks = [];
 let transcript = '';
 let startTime = null;
 let timerInterval = null;
-let timeRemaining = 90;
+let timeRemaining = 60;
 let isSpeaking = false;
+let showHints = true;
 
 // DOM Elements
-const questionCard = document.getElementById('question-card');
-const questionCategory = document.getElementById('question-category');
-const questionText = document.getElementById('question-text');
-const targetWords = document.getElementById('target-words');
-const targetTime = document.getElementById('target-time');
+const activityCard = document.getElementById('activity-card');
+const activityType = document.getElementById('activity-type');
+const activityCategory = document.getElementById('activity-category');
+const activityPrompt = document.getElementById('activity-prompt');
+const activityHint = document.getElementById('activity-hint');
+const targetWordsEl = document.getElementById('target-words');
+const targetTimeEl = document.getElementById('target-time');
 const recordBtn = document.getElementById('record-btn');
 const recordLabel = document.getElementById('record-label');
 const timer = document.getElementById('timer');
 const timerDisplay = document.getElementById('timer-display');
 const resultsSection = document.getElementById('results-section');
 const transcriptText = document.getElementById('transcript-text');
-const newQuestionBtn = document.getElementById('new-question-btn');
+const newActivityBtn = document.getElementById('new-activity-btn');
 const resetBtn = document.getElementById('reset-btn');
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const apiKeyInput = document.getElementById('api-key');
 const saveSettingsBtn = document.getElementById('save-settings');
 const closeSettingsBtn = document.getElementById('close-settings');
-const rewriteBtn = document.getElementById('rewrite-btn');
-const rewriteLoading = document.getElementById('rewrite-loading');
-const rewriteResult = document.getElementById('rewrite-result');
-const rewriteText = document.getElementById('rewrite-text');
-const rewriteError = document.getElementById('rewrite-error');
-const rewriteWordCount = document.getElementById('rewrite-word-count');
-const rewriteReduction = document.getElementById('rewrite-reduction');
-const fillersDetail = document.getElementById('fillers-detail');
-const fillersList = document.getElementById('fillers-list');
+const aiLoading = document.getElementById('ai-loading');
+const improvedResult = document.getElementById('improved-result');
+const improvedText = document.getElementById('improved-text');
+const tipsSection = document.getElementById('tips-section');
+const tipsText = document.getElementById('tips-text');
+const aiError = document.getElementById('ai-error');
 const speakBtn = document.getElementById('speak-btn');
-
-// Score elements
+const hintToggle = document.getElementById('hint-toggle');
 const wordCountEl = document.getElementById('word-count');
-const wordStatusEl = document.getElementById('word-status');
-const fillerCountEl = document.getElementById('filler-count');
-const fillerStatusEl = document.getElementById('filler-status');
-const paceValueEl = document.getElementById('pace-value');
-const paceStatusEl = document.getElementById('pace-status');
-const longestSentenceEl = document.getElementById('longest-sentence');
-const sentenceStatusEl = document.getElementById('sentence-status');
 
 // Show status message
 function showStatus(msg) {
@@ -63,7 +55,7 @@ function showStatus(msg) {
 
 // Timer functions
 function startTimer() {
-    timeRemaining = currentQuestion ? currentQuestion.targetTime : 90;
+    timeRemaining = currentActivity ? currentActivity.targetTime : 60;
     updateTimerDisplay();
     timer.classList.remove('hidden');
     timer.classList.add('recording');
@@ -95,19 +87,18 @@ function updateTimerDisplay() {
 // Recording functions using MediaRecorder
 async function startRecording() {
     try {
-        showStatus('Requesting microphone...');
+        showStatus('Acc\u00e8s au microphone...');
 
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true
         });
 
-        showStatus('Microphone ready! Speak now...');
+        showStatus('Micro pr\u00eat ! Parle maintenant...');
 
         // Determine supported mime type - iOS Safari uses mp4/aac
         let mimeType = '';
         let fileExtension = 'webm';
 
-        // Check supported formats in order of preference for Whisper API
         const formats = [
             { mime: 'audio/webm;codecs=opus', ext: 'webm' },
             { mime: 'audio/webm', ext: 'webm' },
@@ -115,7 +106,7 @@ async function startRecording() {
             { mime: 'audio/aac', ext: 'aac' },
             { mime: 'audio/ogg;codecs=opus', ext: 'ogg' },
             { mime: 'audio/wav', ext: 'wav' },
-            { mime: '', ext: 'webm' } // default fallback
+            { mime: '', ext: 'webm' }
         ];
 
         for (const format of formats) {
@@ -127,11 +118,8 @@ async function startRecording() {
             }
         }
 
-        // Create MediaRecorder with or without explicit mimeType
         const recorderOptions = mimeType ? { mimeType } : {};
         mediaRecorder = new MediaRecorder(stream, recorderOptions);
-
-        // Store extension for later use
         mediaRecorder.fileExtension = fileExtension;
         audioChunks = [];
 
@@ -142,7 +130,6 @@ async function startRecording() {
         };
 
         mediaRecorder.onstop = async () => {
-            // Stop all tracks
             stream.getTracks().forEach(track => track.stop());
 
             if (audioChunks.length > 0) {
@@ -151,23 +138,22 @@ async function startRecording() {
                 console.log('Audio blob size:', audioBlob.size, 'type:', blobType);
                 await transcribeAudio(audioBlob, mediaRecorder.fileExtension);
             } else {
-                showStatus('No audio recorded. Please try again.');
+                showStatus('Pas d\u2019audio enregistr\u00e9. R\u00e9essaie.');
             }
         };
 
         mediaRecorder.onerror = (event) => {
-            showStatus('Recording error: ' + event.error);
+            showStatus('Erreur d\u2019enregistrement : ' + event.error);
         };
 
-        // Start recording
-        mediaRecorder.start(1000); // Collect data every second
+        mediaRecorder.start(1000);
 
         isRecording = true;
         transcript = '';
         startTime = Date.now();
 
         recordBtn.classList.add('recording');
-        recordLabel.textContent = 'Tap to Stop';
+        recordLabel.textContent = 'Appuie pour Arr\u00eater';
         resetBtn.classList.add('hidden');
         resultsSection.classList.remove('hidden');
 
@@ -176,10 +162,10 @@ async function startRecording() {
     } catch (err) {
         console.error('Microphone error:', err);
         if (err.name === 'NotAllowedError') {
-            showStatus('Microphone access denied. Please allow microphone in Settings > Safari.');
-            alert('Microphone access denied.\n\nOn iPhone:\n1. Go to Settings > Safari\n2. Scroll to "Settings for Websites"\n3. Tap Microphone\n4. Set to "Allow"');
+            showStatus('Acc\u00e8s au micro refus\u00e9. Autorise le micro dans les r\u00e9glages.');
+            alert('Acc\u00e8s au micro refus\u00e9.\n\nSur iPhone :\n1. Va dans R\u00e9glages > Safari\n2. D\u00e9file vers "R\u00e9glages des sites web"\n3. Appuie sur Microphone\n4. S\u00e9lectionne "Autoriser"');
         } else {
-            showStatus('Error: ' + err.message);
+            showStatus('Erreur : ' + err.message);
         }
     }
 }
@@ -189,10 +175,10 @@ function stopRecording() {
     stopTimer();
 
     recordBtn.classList.remove('recording');
-    recordLabel.textContent = 'Tap to Record';
+    recordLabel.textContent = 'Appuie pour Enregistrer';
 
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        showStatus('Processing audio...');
+        showStatus('Traitement de l\u2019audio...');
         mediaRecorder.stop();
     }
 }
@@ -202,25 +188,23 @@ async function transcribeAudio(audioBlob, fileExtension = 'webm') {
     const apiKey = localStorage.getItem('grok_api_key') || DEFAULT_GROQ_KEY;
 
     if (!apiKey) {
-        showStatus('Please set your Groq API key in settings first.');
+        showStatus('Configure ta cl\u00e9 API Groq dans les param\u00e8tres.');
         settingsModal.classList.remove('hidden');
         return;
     }
 
-    showStatus('Transcribing with AI...');
+    showStatus('Transcription en cours...');
 
     try {
-        // Create form data with audio file - use correct extension for iOS
         const filename = `recording.${fileExtension}`;
         console.log('Sending audio file:', filename, 'size:', audioBlob.size);
 
         const formData = new FormData();
         formData.append('file', audioBlob, filename);
         formData.append('model', 'whisper-large-v3-turbo');
-        formData.append('language', 'en');
+        formData.append('language', 'fr');
         formData.append('response_format', 'verbose_json');
-        // Include filler sounds in the vocabulary prompt
-        formData.append('prompt', 'Umm, uhh, euh, ehh, ahh, hmm, mhm, uh-huh, like, you know, basically, so, I mean, kind of, sort of, actually, right, well.');
+        formData.append('prompt', 'Euh, ben, bah, genre, en fait, du coup, voil\u00e0, quoi. Je suis all\u00e9 au march\u00e9. Il fait beau aujourd\u2019hui. C\u2019est vraiment int\u00e9ressant.');
 
         const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
             method: 'POST',
@@ -232,105 +216,30 @@ async function transcribeAudio(audioBlob, fileExtension = 'webm') {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error?.message || `Transcription failed: ${response.status}`);
+            throw new Error(errorData.error?.message || `Transcription \u00e9chou\u00e9e : ${response.status}`);
         }
 
         const data = await response.json();
         let rawTranscript = data.text ? data.text.trim() : '';
         console.log('Raw transcription:', rawTranscript);
-        console.log('Segments:', data.segments);
 
         if (rawTranscript) {
             const durationSeconds = (Date.now() - startTime) / 1000;
-
-            // Analyze pauses from segments to detect likely hesitation points
-            const pauseInfo = analyzePauses(data.segments || []);
-
-            // Store pause info for display
-            window.lastPauseInfo = pauseInfo;
-
-            // Mark verbal fillers in the transcript
-            transcript = markVerbalFillers(rawTranscript);
-
-            showResults(transcript, durationSeconds, pauseInfo);
+            transcript = rawTranscript;
+            showResults(transcript, durationSeconds);
         } else {
-            showStatus('No speech detected. Please speak louder and try again.');
+            showStatus('Aucune parole d\u00e9tect\u00e9e. Parle plus fort et r\u00e9essaie.');
         }
 
     } catch (error) {
         console.error('Transcription error:', error);
-        showStatus('Transcription failed: ' + error.message);
+        showStatus('Transcription \u00e9chou\u00e9e : ' + error.message);
     }
-}
-
-// Analyze segment timings for pauses (hesitations that Whisper removed)
-function analyzePauses(segments) {
-    const pauses = [];
-    if (segments && segments.length > 1) {
-        for (let i = 1; i < segments.length; i++) {
-            const gap = segments[i].start - segments[i - 1].end;
-            if (gap > 0.4) { // Gap longer than 400ms indicates hesitation
-                pauses.push({
-                    afterText: segments[i - 1].text?.trim().split(' ').slice(-3).join(' ') || '',
-                    beforeText: segments[i].text?.trim().split(' ').slice(0, 3).join(' ') || '',
-                    duration: gap
-                });
-            }
-        }
-    }
-    return pauses;
-}
-
-// Mark verbal filler words in the transcript
-function markVerbalFillers(text) {
-    // Words that are ALWAYS fillers (hesitation sounds)
-    const alwaysFillers = ['um', 'umm', 'uh', 'uhh', 'euh', 'eh', 'ah', 'ahh', 'er', 'err', 'hmm', 'hm', 'mm', 'mhm', 'uh-huh'];
-
-    // Mark hesitation sounds
-    let marked = text;
-    alwaysFillers.forEach(filler => {
-        const regex = new RegExp(`\\b(${filler})\\b`, 'gi');
-        marked = marked.replace(regex, '[$1]');
-    });
-
-    // Mark contextual fillers (only when used as fillers, not meaning)
-    // "like" as filler: ", like," or "like," at start, or "...like..."
-    marked = marked.replace(/,\s*like\s*,/gi, ', [like],');
-    marked = marked.replace(/^like,\s*/gi, '[like], ');
-
-    // "you know" as filler: ", you know,"
-    marked = marked.replace(/,\s*you know\s*,/gi, ', [you know],');
-    marked = marked.replace(/,\s*you know\./gi, ', [you know].');
-
-    // "basically" at start of sentences or after comma
-    marked = marked.replace(/(^|[.!?]\s*)basically\s+/gi, '$1[basically] ');
-    marked = marked.replace(/,\s*basically\s+/gi, ', [basically] ');
-
-    // "so" at the very start
-    marked = marked.replace(/^so\s+/gi, '[so] ');
-    marked = marked.replace(/(^|[.!?]\s*)so,?\s+/gi, '$1[so] ');
-
-    // "I mean" as filler
-    marked = marked.replace(/,\s*I mean\s*,/gi, ', [I mean],');
-    marked = marked.replace(/^I mean\s*,/gi, '[I mean],');
-
-    // "kind of" / "sort of"
-    marked = marked.replace(/\bkind of\b/gi, '[kind of]');
-    marked = marked.replace(/\bsort of\b/gi, '[sort of]');
-
-    // "actually" at start
-    marked = marked.replace(/(^|[.!?]\s*)actually\s*,?\s*/gi, '$1[actually] ');
-
-    // "right" as filler (at end or with comma)
-    marked = marked.replace(/,\s*right\?/gi, ', [right]?');
-    marked = marked.replace(/,\s*right\s*,/gi, ', [right],');
-
-    return marked;
 }
 
 function toggleRecording() {
-    if (!currentQuestion) {
-        loadNewQuestion();
+    if (!currentActivity) {
+        loadNewActivity();
         return;
     }
 
@@ -343,138 +252,31 @@ function toggleRecording() {
 
 // Analysis functions
 function countWords(text) {
-    // Remove brackets for counting (they're just markup)
     const cleanText = text.replace(/[\[\]]/g, '');
     return cleanText.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 
-function findFillers(text) {
-    const lowerText = text.toLowerCase();
-    const found = [];
-
-    // First, find bracketed fillers from our LLM analysis
-    const bracketedMatches = text.match(/\[([^\]]+)\]/g);
-    if (bracketedMatches) {
-        bracketedMatches.forEach(match => {
-            const filler = match.slice(1, -1).toLowerCase(); // Remove brackets
-            found.push(filler);
-        });
-    }
-
-    // Also check for unbracketed filler words (using original detection)
-    // But skip words that are already bracketed
-    const textWithoutBrackets = text.replace(/\[[^\]]+\]/g, '');
-    const lowerTextClean = textWithoutBrackets.toLowerCase();
-
-    FILLER_WORDS.forEach(filler => {
-        const regex = new RegExp(`\\b${filler}\\b`, 'gi');
-        const matches = lowerTextClean.match(regex);
-        if (matches) {
-            matches.forEach(() => found.push(filler));
-        }
-    });
-
-    return found;
-}
-
-function getLongestSentence(text) {
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    let maxWords = 0;
-
-    sentences.forEach(sentence => {
-        const wordCount = countWords(sentence);
-        if (wordCount > maxWords) {
-            maxWords = wordCount;
-        }
-    });
-
-    return maxWords;
-}
-
-function calculatePace(wordCount, durationSeconds) {
-    if (durationSeconds === 0) return 0;
-    return Math.round((wordCount / durationSeconds) * 60);
-}
-
 // Results display
-function showResults(text, durationSeconds, pauseInfo = []) {
-    // Display transcript with highlighted fillers
-    // Replace [word] with <span class="filler-highlight">word</span>
-    const displayText = text.replace(/\[([^\]]+)\]/g, '<span class="filler-highlight">$1</span>');
-    transcriptText.innerHTML = displayText;
+function showResults(text, durationSeconds) {
+    transcriptText.textContent = text;
 
     const wordCount = countWords(text);
-    const fillers = findFillers(text);
-    // Add detected pauses as hesitations
-    const totalHesitations = fillers.length + pauseInfo.length;
-    const fillerRate = ((totalHesitations / wordCount) * 100).toFixed(1);
-    const pace = calculatePace(wordCount, durationSeconds);
-    const longestSentence = getLongestSentence(text);
-    const targetWordCount = currentQuestion ? currentQuestion.targetWords : 120;
 
-    // Update scorecard
     wordCountEl.textContent = wordCount;
-    wordStatusEl.textContent = wordCount <= targetWordCount ? `Target: ${targetWordCount}` : `${Math.round((wordCount / targetWordCount - 1) * 100)}% over`;
-    wordStatusEl.className = `score-status ${wordCount <= targetWordCount * 1.1 ? 'good' : wordCount <= targetWordCount * 1.3 ? 'warning' : 'bad'}`;
-
-    fillerCountEl.textContent = `${totalHesitations} (${fillerRate}%)`;
-    fillerStatusEl.textContent = `${fillers.length} verbal + ${pauseInfo.length} pauses`;
-    fillerStatusEl.className = `score-status ${totalHesitations <= 2 ? 'good' : totalHesitations <= 5 ? 'warning' : 'bad'}`;
-
-    paceValueEl.textContent = `${pace}`;
-    paceStatusEl.textContent = 'wpm';
-    paceStatusEl.className = `score-status ${pace >= 140 && pace <= 170 ? 'good' : pace >= 120 && pace <= 180 ? 'warning' : 'bad'}`;
-
-    longestSentenceEl.textContent = longestSentence;
-    sentenceStatusEl.textContent = 'words';
-    sentenceStatusEl.className = `score-status ${longestSentence <= 25 ? 'good' : longestSentence <= 35 ? 'warning' : 'bad'}`;
-
-    // Show fillers detail if any found
-    if (fillers.length > 0 || pauseInfo.length > 0) {
-        fillersDetail.classList.remove('hidden');
-
-        let fillerHtml = '';
-
-        // Show verbal fillers
-        if (fillers.length > 0) {
-            const uniqueFillers = [...new Set(fillers)];
-            fillerHtml += '<div class="filler-section"><strong>Verbal fillers:</strong> ';
-            fillerHtml += uniqueFillers.map(f =>
-                `<span class="filler-word">${f} (${fillers.filter(x => x === f).length})</span>`
-            ).join(' ');
-            fillerHtml += '</div>';
-        }
-
-        // Show pauses (hesitations)
-        if (pauseInfo.length > 0) {
-            fillerHtml += '<div class="filler-section" style="margin-top: 8px;"><strong>Hesitation pauses:</strong> ';
-            fillerHtml += pauseInfo.map(p =>
-                `<span class="pause-indicator">⏸ ${p.duration.toFixed(1)}s after "...${p.afterText}"</span>`
-            ).join(' ');
-            fillerHtml += '</div>';
-        }
-
-        fillersList.innerHTML = fillerHtml;
-    } else {
-        fillersDetail.classList.add('hidden');
-    }
-
-    // Reset rewrite section
-    rewriteBtn.classList.remove('hidden');
-    rewriteLoading.classList.add('hidden');
-    rewriteResult.classList.add('hidden');
-    rewriteError.classList.add('hidden');
 
     // Show results
     resultsSection.classList.remove('hidden');
     resetBtn.classList.remove('hidden');
 
-    // Save to history (use total hesitations)
-    saveToHistory(wordCount, totalHesitations, pace, longestSentence);
+    // Save to history
+    saveToHistory(wordCount, currentActivity ? currentActivity.type : 'conversation', currentActivity ? currentActivity.category : '');
+
+    // Auto-trigger AI feedback
+    getAIFeedback();
 }
 
-// Groq API for rewrite with coaching feedback
-async function getRewrite() {
+// Groq API for French tutor feedback
+async function getAIFeedback() {
     const apiKey = localStorage.getItem('grok_api_key') || DEFAULT_GROQ_KEY;
 
     if (!apiKey) {
@@ -482,55 +284,82 @@ async function getRewrite() {
         return;
     }
 
-    rewriteBtn.classList.add('hidden');
-    rewriteLoading.classList.remove('hidden');
-    rewriteError.classList.add('hidden');
+    aiLoading.classList.remove('hidden');
+    improvedResult.classList.add('hidden');
+    tipsSection.classList.add('hidden');
+    aiError.classList.add('hidden');
 
-    // Hide previous feedback
-    const feedbackSection = document.getElementById('coaching-feedback');
-    if (feedbackSection) feedbackSection.classList.add('hidden');
-
-    const fillers = findFillers(transcript);
-    const longestSentence = getLongestSentence(transcript);
     const wordCount = countWords(transcript);
-    const targetWordCount = currentQuestion ? currentQuestion.targetWords : 120;
+    const activityTypeStr = currentActivity ? currentActivity.type : 'conversation';
 
-    const prompt = `You are an executive communication coach helping a French professional sound like a polished American business leader.
+    let prompt = '';
 
-CONTEXT:
-- Question: "${currentQuestion ? currentQuestion.question : 'Interview question'}"
-- Target word count: ${targetWordCount} words
-- Their answer: ${wordCount} words
-- Fillers detected: ${fillers.length > 0 ? fillers.join(', ') : 'none'}
-- Longest sentence: ${longestSentence} words
+    if (activityTypeStr === 'synonyms' || activityTypeStr === 'antonyms') {
+        const label = activityTypeStr === 'synonyms' ? 'synonymes' : 'antonymes';
+        prompt = `Tu es un professeur de fran\u00e7ais bienveillant et encourageant.
 
-THEIR ORIGINAL ANSWER:
+TYPE D'ACTIVIT\u00c9: ${label}
+MOT DONN\u00c9: "${currentActivity.prompt}"
+EXEMPLES ATTENDUS: ${currentActivity.expectedExamples ? currentActivity.expectedExamples.join(', ') : ''}
+
+SA R\u00c9PONSE:
 "${transcript}"
 
-YOUR TASK:
-Provide TWO things in your response, clearly separated:
+T\u00c2CHE:
+1. Analyse les ${label} qu'elle a donn\u00e9s
+2. Dis-lui lesquels sont corrects
+3. Propose d'autres ${label} qu'elle aurait pu dire
+4. Donne un exemple de phrase avec un des ${label}
 
-PART 1 - CRISP VERSION:
-Rewrite their answer following these principles:
-- Lead with the headline (main point first, then support)
-- Keep ALL important context, examples, and specifics - don't oversimplify
-- Remove filler words and verbal padding
-- Break run-on sentences (max 20 words each)
-- Use active voice and strong verbs
-- Maintain their authentic voice and personality
-- Target ${Math.round(targetWordCount * 0.9)}-${targetWordCount} words (preserve substance!)
-
-PART 2 - COACHING TIPS:
-Give 2-3 specific, actionable tips based on THEIR answer. Be specific about what they said vs what to say. Examples:
-- "You started with context. Try: '[Main point]. Here's why...' instead of 'So basically what happened was...'"
-- "Your 35-word sentence about X could be two punchy ones"
-- "Replace 'kind of' and 'sort of' with confident statements"
-
-FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
----CRISP---
-[The rewritten answer here]
+FORMAT EXACT:
+---IMPROVED---
+[Liste des bons ${label} + autres suggestions avec exemples de phrases]
 ---TIPS---
-[2-3 bullet points with specific coaching tips]`;
+[2-3 tips in English about vocabulary and usage]`;
+    } else if (activityTypeStr === 'sentence_building') {
+        prompt = `Tu es un professeur de fran\u00e7ais bienveillant et encourageant.
+
+TYPE D'ACTIVIT\u00c9: Construction de phrases
+MOTS \u00c0 UTILISER: "${currentActivity.prompt}"
+
+SA R\u00c9PONSE:
+"${transcript}"
+
+T\u00c2CHE:
+1. V\u00e9rifie si elle a utilis\u00e9 les mots donn\u00e9s
+2. Corrige la grammaire et la conjugaison
+3. Propose une version am\u00e9lior\u00e9e et naturelle
+4. Propose une deuxi\u00e8me phrase alternative avec les m\u00eames mots
+
+FORMAT EXACT:
+---IMPROVED---
+[Version corrig\u00e9e et naturelle de sa phrase + phrase alternative]
+---TIPS---
+[2-3 tips in English about grammar, conjugation, or sentence structure]`;
+    } else {
+        prompt = `Tu es un professeur de fran\u00e7ais bienveillant et encourageant.
+
+TYPE D'ACTIVIT\u00c9: ${ACTIVITY_TYPE_LABELS[activityTypeStr] || 'Conversation'}
+CONSIGNE: "${currentActivity ? currentActivity.prompt : ''}"
+NOMBRE DE MOTS: ${wordCount}
+
+SA R\u00c9PONSE:
+"${transcript}"
+
+T\u00c2CHE:
+Analyse sa r\u00e9ponse et fournis :
+
+1. Une version am\u00e9lior\u00e9e/corrig\u00e9e de sa r\u00e9ponse en fran\u00e7ais naturel et \u00e9l\u00e9gant
+2. Garde le sens et la personnalit\u00e9 de sa r\u00e9ponse
+3. Corrige les erreurs de grammaire, conjugaison, et vocabulaire
+4. Enrichis le vocabulaire quand c'est pertinent
+
+FORMAT EXACT:
+---IMPROVED---
+[Version am\u00e9lior\u00e9e ici]
+---TIPS---
+[2-3 specific learning tips in English so she can understand them clearly - focus on grammar, vocabulary, or conjugation mistakes she made]`;
+    }
 
     try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -544,7 +373,7 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an elite executive communication coach. You help non-native English speakers sound crisp, confident, and natural - like polished American executives. You preserve substance while cutting fluff. Always respond in the exact format requested.'
+                        content: 'You are a warm, encouraging French language tutor. You help English speakers improve their French. You analyze grammar, vocabulary, and conjugation with kindness. Always respond in the exact format requested. The improved version should be in French. The tips should be in English for clarity.'
                     },
                     { role: 'user', content: prompt }
                 ],
@@ -563,66 +392,54 @@ FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
         const fullResponse = data.choices[0].message.content.trim();
 
         // Parse the response
-        let crispVersion = fullResponse;
+        let improvedVersion = fullResponse;
         let tips = '';
 
-        if (fullResponse.includes('---CRISP---') && fullResponse.includes('---TIPS---')) {
-            const crispMatch = fullResponse.match(/---CRISP---\s*([\s\S]*?)\s*---TIPS---/);
+        if (fullResponse.includes('---IMPROVED---') && fullResponse.includes('---TIPS---')) {
+            const improvedMatch = fullResponse.match(/---IMPROVED---\s*([\s\S]*?)\s*---TIPS---/);
             const tipsMatch = fullResponse.match(/---TIPS---\s*([\s\S]*?)$/);
 
-            if (crispMatch) crispVersion = crispMatch[1].trim();
+            if (improvedMatch) improvedVersion = improvedMatch[1].trim();
             if (tipsMatch) tips = tipsMatch[1].trim();
         }
 
-        // Show crisp version
-        rewriteText.textContent = crispVersion;
-        const originalWords = countWords(transcript);
-        const newWords = countWords(crispVersion);
-        const reduction = Math.round((1 - newWords / originalWords) * 100);
+        // Show improved version
+        improvedText.textContent = improvedVersion;
 
-        rewriteWordCount.textContent = `${newWords} words`;
-        rewriteReduction.textContent = reduction > 0 ? `${reduction}% shorter` : `${Math.abs(reduction)}% longer`;
-
-        // Show coaching tips if we got them
-        if (tips && feedbackSection) {
-            const feedbackText = document.getElementById('feedback-text');
-            if (feedbackText) {
-                // Format tips as bullet points
-                const formattedTips = tips
-                    .split('\n')
-                    .filter(line => line.trim())
-                    .map(line => line.replace(/^[-•*]\s*/, '').trim())
-                    .filter(line => line.length > 0)
-                    .map(tip => `<li>${tip}</li>`)
-                    .join('');
-                feedbackText.innerHTML = `<ul>${formattedTips}</ul>`;
-                feedbackSection.classList.remove('hidden');
-            }
+        // Show tips if we got them
+        if (tips) {
+            const formattedTips = tips
+                .split('\n')
+                .filter(line => line.trim())
+                .map(line => line.replace(/^[-\u2022*]\s*/, '').trim())
+                .filter(line => line.length > 0)
+                .map(tip => `<li>${tip}</li>`)
+                .join('');
+            tipsText.innerHTML = `<ul>${formattedTips}</ul>`;
+            tipsSection.classList.remove('hidden');
         }
 
-        rewriteLoading.classList.add('hidden');
-        rewriteResult.classList.remove('hidden');
+        aiLoading.classList.add('hidden');
+        improvedResult.classList.remove('hidden');
 
     } catch (error) {
-        console.error('Rewrite error:', error);
-        rewriteLoading.classList.add('hidden');
-        rewriteError.classList.remove('hidden');
-        rewriteError.querySelector('.error-text').textContent = error.message;
-        rewriteBtn.classList.remove('hidden');
+        console.error('AI feedback error:', error);
+        aiLoading.classList.add('hidden');
+        aiError.classList.remove('hidden');
+        aiError.querySelector('.error-text').textContent = error.message;
     }
 }
 
 // History management
-function saveToHistory(wordCount, fillerCount, pace, longestSentence) {
-    const history = JSON.parse(localStorage.getItem('voice_drill_history') || '[]');
+function saveToHistory(wordCount, activityType, category) {
+    const history = JSON.parse(localStorage.getItem('parle_avec_moi_history') || '[]');
 
     history.unshift({
         date: new Date().toISOString(),
-        question: currentQuestion ? currentQuestion.question.substring(0, 50) + '...' : 'Unknown',
-        wordCount,
-        fillerCount,
-        pace,
-        longestSentence
+        activity: currentActivity ? currentActivity.prompt.substring(0, 50) + '...' : 'Inconnu',
+        activityType: activityType,
+        category: category,
+        wordCount
     });
 
     // Keep only last 20 sessions
@@ -630,67 +447,87 @@ function saveToHistory(wordCount, fillerCount, pace, longestSentence) {
         history.pop();
     }
 
-    localStorage.setItem('voice_drill_history', JSON.stringify(history));
+    localStorage.setItem('parle_avec_moi_history', JSON.stringify(history));
     updateHistoryDisplay();
     updateProgressChart();
 }
 
 function updateHistoryDisplay() {
-    const history = JSON.parse(localStorage.getItem('voice_drill_history') || '[]');
+    const history = JSON.parse(localStorage.getItem('parle_avec_moi_history') || '[]');
     const historyList = document.getElementById('history-list');
 
     if (history.length === 0) {
-        historyList.innerHTML = '<p class="empty-state">No sessions yet. Start your first drill!</p>';
+        historyList.innerHTML = '<p class="empty-state">Pas encore de s\u00e9ances. Lance ta premi\u00e8re activit\u00e9 !</p>';
         return;
     }
 
     historyList.innerHTML = history.slice(0, 5).map(item => {
         const date = new Date(item.date);
-        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dateStr = date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' });
+        const icon = ACTIVITY_TYPE_ICONS[item.activityType] || '\ud83d\udcac';
 
         return `
             <div class="history-item">
                 <div>
-                    <div class="history-date">${dateStr}</div>
+                    <div class="history-date">${icon} ${dateStr}</div>
                 </div>
                 <div class="history-stats">
-                    <span class="history-stat">${item.wordCount}w</span>
-                    <span class="history-stat">${item.fillerCount}f</span>
-                    <span class="history-stat">${item.pace}wpm</span>
+                    <span class="history-stat">${item.wordCount} mots</span>
+                    <span class="history-stat type-badge-sm">${ACTIVITY_TYPE_LABELS[item.activityType] || item.activityType}</span>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// Question loading with tracking to avoid repeats
-function loadNewQuestion() {
-    // Get asked questions from localStorage
-    let askedQuestions = JSON.parse(localStorage.getItem('voice_drill_asked_questions') || '[]');
+// Activity loading with tracking to avoid repeats
+function loadNewActivity() {
+    let askedActivities = JSON.parse(localStorage.getItem('parle_avec_moi_asked_activities') || '[]');
 
-    // If we've asked all questions, reset the list
-    if (askedQuestions.length >= QUESTIONS.length) {
-        console.log('All questions asked! Resetting list.');
-        askedQuestions = [];
+    // If we've asked all activities, reset the list
+    if (askedActivities.length >= ACTIVITIES.length) {
+        console.log('All activities done! Resetting list.');
+        askedActivities = [];
     }
 
-    // Get available questions (not yet asked)
-    const availableIndices = QUESTIONS.map((_, i) => i).filter(i => !askedQuestions.includes(i));
+    // Get available activities (not yet asked)
+    const availableIndices = ACTIVITIES.map((_, i) => i).filter(i => !askedActivities.includes(i));
 
-    // Pick a random question from available ones
+    // Pick a random activity
     const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    currentQuestion = QUESTIONS[randomIndex];
+    currentActivity = ACTIVITIES[randomIndex];
 
-    // Track this question as asked
-    askedQuestions.push(randomIndex);
-    localStorage.setItem('voice_drill_asked_questions', JSON.stringify(askedQuestions));
+    // Track this activity as asked
+    askedActivities.push(randomIndex);
+    localStorage.setItem('parle_avec_moi_asked_activities', JSON.stringify(askedActivities));
 
-    console.log(`Question ${askedQuestions.length}/${QUESTIONS.length}: "${currentQuestion.question.substring(0, 50)}..."`);
+    console.log(`Activity ${askedActivities.length}/${ACTIVITIES.length}: "${currentActivity.prompt.substring(0, 50)}..."`);
 
-    questionCategory.textContent = currentQuestion.category;
-    questionText.textContent = currentQuestion.question;
-    targetWords.textContent = currentQuestion.targetWords;
-    targetTime.textContent = currentQuestion.targetTime;
+    // Update UI
+    const icon = ACTIVITY_TYPE_ICONS[currentActivity.type] || '';
+    const label = ACTIVITY_TYPE_LABELS[currentActivity.type] || currentActivity.type;
+    activityType.textContent = `${icon} ${label}`;
+    activityType.className = `activity-type-badge ${currentActivity.type}`;
+    activityCategory.textContent = currentActivity.category;
+
+    // Show prompt based on activity type
+    if (currentActivity.type === 'synonyms') {
+        activityPrompt.innerHTML = `<span class="prompt-word">${currentActivity.prompt}</span><br><span class="prompt-instruction">Donne le plus de synonymes possible !</span>`;
+    } else if (currentActivity.type === 'antonyms') {
+        activityPrompt.innerHTML = `<span class="prompt-word">${currentActivity.prompt}</span><br><span class="prompt-instruction">Donne le plus d'antonymes possible !</span>`;
+    } else if (currentActivity.type === 'sentence_building') {
+        const words = currentActivity.prompt.split(' / ');
+        activityPrompt.innerHTML = `<div class="word-chips">${words.map(w => `<span class="word-chip">${w}</span>`).join('')}</div><span class="prompt-instruction">Construis une phrase avec ces mots !</span>`;
+    } else {
+        activityPrompt.textContent = currentActivity.prompt;
+    }
+
+    // Show/hide hint
+    activityHint.textContent = currentActivity.hint;
+    activityHint.classList.toggle('hidden', !showHints);
+
+    targetWordsEl.textContent = currentActivity.targetWords;
+    targetTimeEl.textContent = currentActivity.targetTime;
 
     // Reset UI
     resultsSection.classList.add('hidden');
@@ -698,7 +535,7 @@ function loadNewQuestion() {
     timer.classList.add('hidden');
     transcript = '';
 
-    recordLabel.textContent = 'Tap to Record';
+    recordLabel.textContent = 'Appuie pour Enregistrer';
 }
 
 // Settings
@@ -724,7 +561,6 @@ function saveSettings() {
         localStorage.removeItem('grok_api_key');
     }
 
-    // Save ElevenLabs key
     if (elevenlabsKeyInput) {
         const elevenLabsKey = elevenlabsKeyInput.value.trim();
         if (elevenLabsKey) {
@@ -740,37 +576,30 @@ function saveSettings() {
 // Audio player for ElevenLabs
 let audioPlayer = null;
 
-// Text-to-speech for crisp version
-async function speakCrispVersion() {
-    const text = rewriteText.textContent;
+// Text-to-speech for improved version
+async function speakImprovedVersion() {
+    const text = improvedText.textContent;
 
     if (!text) return;
 
     // Stop if already speaking
     if (isSpeaking) {
-        // Stop Web Audio API source
         if (window.currentAudioSource) {
-            try {
-                window.currentAudioSource.stop();
-            } catch (e) { /* ignore */ }
+            try { window.currentAudioSource.stop(); } catch (e) { /* ignore */ }
             window.currentAudioSource = null;
         }
         if (window.currentAudioContext) {
-            try {
-                window.currentAudioContext.close();
-            } catch (e) { /* ignore */ }
+            try { window.currentAudioContext.close(); } catch (e) { /* ignore */ }
             window.currentAudioContext = null;
         }
-        // Stop HTML5 Audio
         if (audioPlayer) {
             audioPlayer.pause();
             audioPlayer.currentTime = 0;
             audioPlayer = null;
         }
-        // Stop browser TTS
         window.speechSynthesis.cancel();
         isSpeaking = false;
-        speakBtn.textContent = '🔊 Listen';
+        speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
         return;
     }
 
@@ -783,16 +612,16 @@ async function speakCrispVersion() {
     }
 }
 
-// ElevenLabs TTS (natural voice)
+// ElevenLabs TTS (natural French voice)
 async function speakWithElevenLabs(text, apiKey) {
-    speakBtn.textContent = '⏳ Loading...';
+    speakBtn.textContent = '\u23f3 Chargement...';
     isSpeaking = true;
 
     try {
-        // Using "Rachel" voice - professional American female
-        const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+        // Using a French-compatible voice with multilingual model
+        const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel - works well with multilingual v2
 
-        console.log('Calling ElevenLabs API with key:', apiKey.substring(0, 10) + '...');
+        console.log('Calling ElevenLabs API...');
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
             method: 'POST',
             headers: {
@@ -802,7 +631,7 @@ async function speakWithElevenLabs(text, apiKey) {
             },
             body: JSON.stringify({
                 text: text,
-                model_id: 'eleven_monolingual_v1',
+                model_id: 'eleven_multilingual_v2',
                 voice_settings: {
                     stability: 0.5,
                     similarity_boost: 0.75
@@ -813,160 +642,141 @@ async function speakWithElevenLabs(text, apiKey) {
         if (!response.ok) {
             const errorText = await response.text().catch(() => 'Unknown error');
             console.error('ElevenLabs error:', response.status, errorText);
-            throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+            throw new Error(`ElevenLabs API error: ${response.status}`);
         }
 
         const audioBlob = await response.blob();
-        console.log('ElevenLabs audio received:', audioBlob.size, 'bytes, type:', audioBlob.type);
+        console.log('ElevenLabs audio received:', audioBlob.size, 'bytes');
 
         if (audioBlob.size < 1000) {
-            console.error('Audio blob too small, likely an error');
             throw new Error('Invalid audio response');
         }
 
-        // Use Web Audio API for better iOS compatibility
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        // iOS Safari requires resuming the audio context after user interaction
         if (audioContext.state === 'suspended') {
             await audioContext.resume();
         }
 
         const arrayBuffer = await audioBlob.arrayBuffer();
-        console.log('ArrayBuffer size:', arrayBuffer.byteLength);
-
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        console.log('Audio decoded, duration:', audioBuffer.duration, 'seconds');
 
-        // Create source and play
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContext.destination);
 
         source.onended = () => {
-            console.log('ElevenLabs audio ended');
             isSpeaking = false;
-            speakBtn.textContent = '🔊 Listen';
+            speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
             audioContext.close();
         };
 
         source.start(0);
-        speakBtn.textContent = '⏹️ Stop';
-        console.log('ElevenLabs audio started playing');
+        speakBtn.textContent = '\u23f9\ufe0f Stop';
 
-        // Store for stopping
         window.currentAudioSource = source;
         window.currentAudioContext = audioContext;
 
     } catch (error) {
         console.error('ElevenLabs TTS error:', error);
         isSpeaking = false;
-        speakBtn.textContent = '🔊 Listen';
-        // Fallback to browser TTS
-        console.log('Falling back to browser TTS due to:', error.message);
+        speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
+        console.log('Falling back to browser TTS');
         speakWithBrowser(text);
     }
 }
 
-// Browser TTS fallback - with iOS Safari fix
+// Browser TTS fallback - French voice
 function speakWithBrowser(text) {
-    // iOS Safari requires voices to be loaded first
-    // We need to wait for voices and use a workaround
-
-    speakBtn.textContent = '⏳ Loading...';
+    speakBtn.textContent = '\u23f3 Chargement...';
     isSpeaking = true;
 
-    // Cancel any pending speech
     window.speechSynthesis.cancel();
 
     function doSpeak() {
         const utterance = new SpeechSynthesisUtterance(text);
 
-        // Configure for clear American English
-        utterance.rate = 0.95;
+        utterance.rate = 0.85;
         utterance.pitch = 1;
         utterance.volume = 1;
+        utterance.lang = 'fr-FR';
 
-        // Try to get an American English voice
         const voices = window.speechSynthesis.getVoices();
         console.log('Available voices:', voices.length);
 
-        const americanVoice = voices.find(v =>
-            v.lang === 'en-US' && (v.name.includes('Samantha') || v.name.includes('Alex') || v.name.includes('Google'))
-        ) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+        const frenchVoice = voices.find(v =>
+            v.lang === 'fr-FR' && (v.name.includes('Thomas') || v.name.includes('Amelie') || v.name.includes('Google'))
+        ) || voices.find(v => v.lang.startsWith('fr')) || voices[0];
 
-        if (americanVoice) {
-            utterance.voice = americanVoice;
-            console.log('Using voice:', americanVoice.name);
+        if (frenchVoice) {
+            utterance.voice = frenchVoice;
+            console.log('Using voice:', frenchVoice.name);
         }
 
         utterance.onstart = () => {
-            console.log('Speech started');
             isSpeaking = true;
-            speakBtn.textContent = '⏹️ Stop';
+            speakBtn.textContent = '\u23f9\ufe0f Stop';
         };
 
         utterance.onend = () => {
-            console.log('Speech ended');
             isSpeaking = false;
-            speakBtn.textContent = '🔊 Listen';
+            speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
         };
 
         utterance.onerror = (e) => {
             console.error('Speech error:', e);
             isSpeaking = false;
-            speakBtn.textContent = '🔊 Listen';
+            speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
         };
 
-        // iOS Safari workaround: speech sometimes doesn't start
-        // We need to use a slight delay and check if it started
         setTimeout(() => {
             window.speechSynthesis.speak(utterance);
 
-            // iOS Safari bug: speech can get stuck, use resume trick
             setTimeout(() => {
                 if (window.speechSynthesis.paused) {
                     window.speechSynthesis.resume();
                 }
-                // If still loading after 2 seconds, something is wrong
-                if (speakBtn.textContent === '⏳ Loading...') {
-                    // Check if speech is actually happening
+                if (speakBtn.textContent === '\u23f3 Chargement...') {
                     if (!window.speechSynthesis.speaking) {
-                        console.log('Speech did not start, retrying...');
                         window.speechSynthesis.cancel();
                         window.speechSynthesis.speak(utterance);
                     } else {
-                        speakBtn.textContent = '⏹️ Stop';
+                        speakBtn.textContent = '\u23f9\ufe0f Stop';
                     }
                 }
             }, 500);
         }, 100);
     }
 
-    // Check if voices are loaded
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
         doSpeak();
     } else {
-        // Wait for voices to load (iOS Safari)
-        console.log('Waiting for voices to load...');
         window.speechSynthesis.onvoiceschanged = () => {
-            console.log('Voices loaded');
             doSpeak();
         };
-        // Fallback: try anyway after 1 second
         setTimeout(() => {
-            if (speakBtn.textContent === '⏳ Loading...') {
-                console.log('Timeout waiting for voices, trying anyway');
+            if (speakBtn.textContent === '\u23f3 Chargement...') {
                 doSpeak();
             }
         }, 1000);
     }
 }
 
+// Toggle hint visibility
+function toggleHints() {
+    showHints = !showHints;
+    if (activityHint) {
+        activityHint.classList.toggle('hidden', !showHints);
+    }
+    if (hintToggle) {
+        hintToggle.classList.toggle('active', showHints);
+    }
+}
+
 // Event listeners
 recordBtn.addEventListener('click', toggleRecording);
-newQuestionBtn.addEventListener('click', loadNewQuestion);
+newActivityBtn.addEventListener('click', loadNewActivity);
 resetBtn.addEventListener('click', () => {
     resultsSection.classList.add('hidden');
     resetBtn.classList.add('hidden');
@@ -976,7 +786,10 @@ resetBtn.addEventListener('click', () => {
 settingsBtn.addEventListener('click', openSettings);
 closeSettingsBtn.addEventListener('click', closeSettings);
 saveSettingsBtn.addEventListener('click', saveSettings);
-rewriteBtn.addEventListener('click', getRewrite);
+
+if (hintToggle) {
+    hintToggle.addEventListener('click', toggleHints);
+}
 
 // Close modal on background click
 settingsModal.addEventListener('click', (e) => {
@@ -985,7 +798,7 @@ settingsModal.addEventListener('click', (e) => {
     }
 });
 
-// Load voices (needed for some browsers)
+// Load voices
 if (window.speechSynthesis) {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => {
@@ -993,89 +806,46 @@ if (window.speechSynthesis) {
     };
 }
 
-speakBtn.addEventListener('click', speakCrispVersion);
+speakBtn.addEventListener('click', speakImprovedVersion);
+
+// Retry button for AI errors
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'retry-btn') {
+        getAIFeedback();
+    }
+});
 
 // Progress chart functionality
 function updateProgressChart() {
-    const history = JSON.parse(localStorage.getItem('voice_drill_history') || '[]');
+    const history = JSON.parse(localStorage.getItem('parle_avec_moi_history') || '[]');
     const chartContainer = document.getElementById('progress-chart');
     const progressStats = document.getElementById('progress-stats');
-    const metricSelect = document.getElementById('progress-metric');
 
     if (history.length < 3) {
-        chartContainer.innerHTML = '<p class="empty-state">Complete 3+ drills to see your progress</p>';
+        chartContainer.innerHTML = '<p class="empty-state">Fais 3+ exercices pour voir tes progr\u00e8s</p>';
         progressStats.classList.add('hidden');
         return;
     }
 
     progressStats.classList.remove('hidden');
-    const metric = metricSelect ? metricSelect.value : 'fillers';
 
     // Get last 10 sessions (reversed to show oldest first)
     const recentHistory = history.slice(0, 10).reverse();
-
-    // Get metric values and thresholds
-    const metricConfig = {
-        fillers: {
-            getValue: (h) => h.fillerCount,
-            goodMax: 2,
-            warnMax: 5,
-            label: 'fillers',
-            lowerIsBetter: true
-        },
-        pace: {
-            getValue: (h) => h.pace,
-            goodMin: 140,
-            goodMax: 170,
-            warnMin: 120,
-            warnMax: 180,
-            label: 'wpm',
-            lowerIsBetter: false
-        },
-        words: {
-            getValue: (h) => h.wordCount,
-            goodMax: 130,
-            warnMax: 160,
-            label: 'words',
-            lowerIsBetter: true
-        },
-        longest: {
-            getValue: (h) => h.longestSentence,
-            goodMax: 25,
-            warnMax: 35,
-            label: 'words',
-            lowerIsBetter: true
-        }
-    };
-
-    const config = metricConfig[metric];
-    const values = recentHistory.map(h => config.getValue(h));
+    const values = recentHistory.map(h => h.wordCount);
     const maxValue = Math.max(...values, 1);
-
-    // Calculate status for each value
-    const getStatus = (value) => {
-        if (metric === 'pace') {
-            if (value >= config.goodMin && value <= config.goodMax) return 'good';
-            if (value >= config.warnMin && value <= config.warnMax) return 'warning';
-            return 'bad';
-        }
-        if (value <= config.goodMax) return 'good';
-        if (value <= config.warnMax) return 'warning';
-        return 'bad';
-    };
 
     // Build chart HTML
     chartContainer.innerHTML = recentHistory.map((h, i) => {
-        const value = config.getValue(h);
+        const value = h.wordCount;
         const height = Math.max(10, (value / maxValue) * 100);
-        const status = getStatus(value);
         const date = new Date(h.date);
-        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dateStr = date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' });
+        const icon = ACTIVITY_TYPE_ICONS[h.activityType] || '';
 
         return `
             <div class="chart-bar-container">
                 <span class="chart-value">${value}</span>
-                <div class="chart-bar ${status}" style="height: ${height}px;"></div>
+                <div class="chart-bar good" style="height: ${height}px;" title="${icon}"></div>
                 <span class="chart-label">${dateStr}</span>
             </div>
         `;
@@ -1084,29 +854,30 @@ function updateProgressChart() {
     // Update stats
     document.getElementById('total-sessions').textContent = history.length;
 
-    const avgFillers = (history.reduce((sum, h) => sum + h.fillerCount, 0) / history.length).toFixed(1);
-    document.getElementById('avg-fillers').textContent = avgFillers;
+    // Calculate streak
+    const streak = calculateStreak(history);
+    document.getElementById('streak-count').textContent = streak;
 
-    // Calculate trend (compare first half to second half of recent sessions)
+    // Calculate trend
     if (recentHistory.length >= 4) {
         const mid = Math.floor(recentHistory.length / 2);
         const firstHalf = recentHistory.slice(0, mid);
         const secondHalf = recentHistory.slice(mid);
 
-        const firstAvg = firstHalf.reduce((sum, h) => sum + config.getValue(h), 0) / firstHalf.length;
-        const secondAvg = secondHalf.reduce((sum, h) => sum + config.getValue(h), 0) / secondHalf.length;
+        const firstAvg = firstHalf.reduce((sum, h) => sum + h.wordCount, 0) / firstHalf.length;
+        const secondAvg = secondHalf.reduce((sum, h) => sum + h.wordCount, 0) / secondHalf.length;
 
         const trendIndicator = document.getElementById('trend-indicator');
-        const improvement = config.lowerIsBetter ? firstAvg - secondAvg : secondAvg - firstAvg;
+        const improvement = secondAvg - firstAvg;
 
-        if (Math.abs(improvement) < 0.5) {
-            trendIndicator.textContent = '→ Stable';
+        if (Math.abs(improvement) < 2) {
+            trendIndicator.textContent = '\u2192 Stable';
             trendIndicator.className = 'stat-value';
         } else if (improvement > 0) {
-            trendIndicator.textContent = '↑ Improving';
+            trendIndicator.textContent = '\u2191 En progr\u00e8s';
             trendIndicator.className = 'stat-value improving';
         } else {
-            trendIndicator.textContent = '↓ Needs work';
+            trendIndicator.textContent = '\u2193 \u00c0 travailler';
             trendIndicator.className = 'stat-value declining';
         }
     } else {
@@ -1114,10 +885,32 @@ function updateProgressChart() {
     }
 }
 
-// Event listener for metric selector
-const metricSelect = document.getElementById('progress-metric');
-if (metricSelect) {
-    metricSelect.addEventListener('change', updateProgressChart);
+function calculateStreak(history) {
+    if (history.length === 0) return 0;
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check each day backwards
+    for (let i = 0; i < 365; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toDateString();
+
+        const hasSession = history.some(h => new Date(h.date).toDateString() === dateStr);
+
+        if (hasSession) {
+            streak++;
+        } else if (i === 0) {
+            // Today doesn't count against streak if no session yet
+            continue;
+        } else {
+            break;
+        }
+    }
+
+    return streak;
 }
 
 // ========================
@@ -1129,27 +922,25 @@ const reminderTime = document.getElementById('reminder-time');
 const enableNotificationsBtn = document.getElementById('enable-notifications');
 const notificationStatus = document.getElementById('notification-status');
 
-// Check notification permission status
 function updateNotificationStatus() {
     if (!('Notification' in window)) {
-        if (notificationStatus) notificationStatus.textContent = 'Notifications not supported on this device';
+        if (notificationStatus) notificationStatus.textContent = 'Notifications non support\u00e9es sur cet appareil';
         return;
     }
 
     if (Notification.permission === 'granted') {
-        if (notificationStatus) notificationStatus.textContent = '✓ Notifications enabled';
+        if (notificationStatus) notificationStatus.textContent = '\u2713 Notifications activ\u00e9es';
         if (enableNotificationsBtn) enableNotificationsBtn.style.display = 'none';
     } else if (Notification.permission === 'denied') {
-        if (notificationStatus) notificationStatus.textContent = '✗ Notifications blocked - enable in browser settings';
+        if (notificationStatus) notificationStatus.textContent = '\u2717 Notifications bloqu\u00e9es - active-les dans les r\u00e9glages';
     } else {
-        if (notificationStatus) notificationStatus.textContent = 'Click button to enable notifications';
+        if (notificationStatus) notificationStatus.textContent = 'Appuie pour activer les notifications';
     }
 }
 
-// Request notification permission
 async function requestNotificationPermission() {
     if (!('Notification' in window)) {
-        alert('Notifications are not supported on this device/browser.');
+        alert('Les notifications ne sont pas support\u00e9es sur cet appareil.');
         return;
     }
 
@@ -1158,9 +949,8 @@ async function requestNotificationPermission() {
         updateNotificationStatus();
 
         if (permission === 'granted') {
-            // Show test notification
-            new Notification('Voice Drill', {
-                body: 'Daily reminders enabled! You\'ll be reminded to practice.',
+            new Notification('Jour apr\u00e8s Jour', {
+                body: 'Les rappels sont activ\u00e9s ! On te rappellera de pratiquer.',
                 icon: 'icon-192.png'
             });
         }
@@ -1169,14 +959,13 @@ async function requestNotificationPermission() {
     }
 }
 
-// Save reminder settings
 function saveReminderSettings() {
     if (reminderEnabled && reminderTime) {
         const settings = {
             enabled: reminderEnabled.checked,
             time: reminderTime.value
         };
-        localStorage.setItem('voice_drill_reminder', JSON.stringify(settings));
+        localStorage.setItem('parle_avec_moi_reminder', JSON.stringify(settings));
 
         if (settings.enabled) {
             scheduleReminder(settings.time);
@@ -1184,9 +973,8 @@ function saveReminderSettings() {
     }
 }
 
-// Load reminder settings
 function loadReminderSettings() {
-    const saved = localStorage.getItem('voice_drill_reminder');
+    const saved = localStorage.getItem('parle_avec_moi_reminder');
     if (saved) {
         const settings = JSON.parse(saved);
         if (reminderEnabled) reminderEnabled.checked = settings.enabled;
@@ -1195,44 +983,38 @@ function loadReminderSettings() {
     updateNotificationStatus();
 }
 
-// Schedule daily reminder check
 let reminderCheckInterval = null;
 
 function scheduleReminder(timeStr) {
-    // Clear existing interval
     if (reminderCheckInterval) {
         clearInterval(reminderCheckInterval);
     }
 
-    // Check every minute if it's time to remind
     reminderCheckInterval = setInterval(() => {
-        const settings = JSON.parse(localStorage.getItem('voice_drill_reminder') || '{}');
+        const settings = JSON.parse(localStorage.getItem('parle_avec_moi_reminder') || '{}');
         if (!settings.enabled) return;
 
         const now = new Date();
         const [hours, minutes] = settings.time.split(':').map(Number);
 
-        // Check if it's the right time (within the same minute)
         if (now.getHours() === hours && now.getMinutes() === minutes) {
-            // Check if we already reminded today
-            const lastReminder = localStorage.getItem('voice_drill_last_reminder');
+            const lastReminder = localStorage.getItem('parle_avec_moi_last_reminder');
             const today = now.toDateString();
 
             if (lastReminder !== today) {
                 showReminder();
-                localStorage.setItem('voice_drill_last_reminder', today);
+                localStorage.setItem('parle_avec_moi_last_reminder', today);
             }
         }
-    }, 60000); // Check every minute
+    }, 60000);
 }
 
-// Show the reminder notification
 function showReminder() {
     if (Notification.permission === 'granted') {
-        const notification = new Notification('🎤 Voice Drill Time!', {
-            body: 'Take 5 minutes to practice your communication skills.',
+        const notification = new Notification('\ud83c\uddeb\ud83c\uddf7 Jour apr\u00e8s Jour !', {
+            body: 'C\u2019est l\u2019heure de pratiquer ton fran\u00e7ais ! 5 minutes suffisent.',
             icon: 'icon-192.png',
-            tag: 'voice-drill-reminder',
+            tag: 'jour-apres-jour-reminder',
             requireInteraction: true
         });
 
@@ -1243,7 +1025,6 @@ function showReminder() {
     }
 }
 
-// Event listeners for reminder settings
 if (enableNotificationsBtn) {
     enableNotificationsBtn.addEventListener('click', requestNotificationPermission);
 }
@@ -1269,9 +1050,8 @@ function getWeekNumber(date) {
 }
 
 function getWeeklyStats() {
-    const history = JSON.parse(localStorage.getItem('voice_drill_history') || '[]');
+    const history = JSON.parse(localStorage.getItem('parle_avec_moi_history') || '[]');
 
-    // Get sessions from the past 7 days
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
@@ -1281,15 +1061,14 @@ function getWeeklyStats() {
         return null;
     }
 
-    // Calculate averages
-    const avgFillers = thisWeekSessions.reduce((sum, h) => sum + h.fillerCount, 0) / thisWeekSessions.length;
-    const avgPace = thisWeekSessions.reduce((sum, h) => sum + h.pace, 0) / thisWeekSessions.length;
     const avgWords = thisWeekSessions.reduce((sum, h) => sum + h.wordCount, 0) / thisWeekSessions.length;
-    const avgLongest = thisWeekSessions.reduce((sum, h) => sum + h.longestSentence, 0) / thisWeekSessions.length;
 
-    // Find best and worst sessions
-    const bestFillers = Math.min(...thisWeekSessions.map(h => h.fillerCount));
-    const worstFillers = Math.max(...thisWeekSessions.map(h => h.fillerCount));
+    // Activity type breakdown
+    const typeBreakdown = {};
+    thisWeekSessions.forEach(h => {
+        const type = h.activityType || 'conversation';
+        typeBreakdown[type] = (typeBreakdown[type] || 0) + 1;
+    });
 
     // Get previous week for comparison
     const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -1300,21 +1079,15 @@ function getWeeklyStats() {
 
     let comparison = null;
     if (lastWeekSessions.length > 0) {
-        const lastWeekAvgFillers = lastWeekSessions.reduce((sum, h) => sum + h.fillerCount, 0) / lastWeekSessions.length;
         comparison = {
-            fillerChange: avgFillers - lastWeekAvgFillers,
             sessionChange: thisWeekSessions.length - lastWeekSessions.length
         };
     }
 
     return {
         sessionCount: thisWeekSessions.length,
-        avgFillers: avgFillers.toFixed(1),
-        avgPace: Math.round(avgPace),
         avgWords: Math.round(avgWords),
-        avgLongest: Math.round(avgLongest),
-        bestFillers,
-        worstFillers,
+        typeBreakdown,
         comparison,
         sessions: thisWeekSessions
     };
@@ -1325,81 +1098,65 @@ function generateWeeklyDebrief() {
 
     if (!stats) {
         return {
-            summary: "No practice sessions this week. Time to get started!",
+            summary: "Pas de s\u00e9ances cette semaine. C'est le moment de commencer !",
             strengths: [],
             improvements: [],
-            focus: "Complete at least 3 practice sessions this week."
+            focus: "Fais au moins 3 exercices cette semaine."
         };
     }
 
     const strengths = [];
     const improvements = [];
 
-    // Analyze filler performance
-    if (parseFloat(stats.avgFillers) <= 2) {
-        strengths.push("Excellent filler control - averaging only " + stats.avgFillers + " per session");
-    } else if (parseFloat(stats.avgFillers) <= 5) {
-        improvements.push("Work on reducing fillers - averaging " + stats.avgFillers + " per session (target: under 3)");
-    } else {
-        improvements.push("Focus on filler reduction - " + stats.avgFillers + " per session is too high. Try pausing silently instead of 'um'");
-    }
-
-    // Analyze pace
-    if (stats.avgPace >= 140 && stats.avgPace <= 170) {
-        strengths.push("Great speaking pace at " + stats.avgPace + " wpm - clear and professional");
-    } else if (stats.avgPace < 140) {
-        improvements.push("Speed up slightly - " + stats.avgPace + " wpm is a bit slow. Aim for 140-170 wpm");
-    } else {
-        improvements.push("Slow down a bit - " + stats.avgPace + " wpm is too fast. Take breaths between sentences");
-    }
-
-    // Analyze sentence length
-    if (stats.avgLongest <= 25) {
-        strengths.push("Concise sentences - averaging " + stats.avgLongest + " words (perfect for clarity)");
-    } else if (stats.avgLongest <= 35) {
-        improvements.push("Watch run-on sentences - averaging " + stats.avgLongest + " words. Try breaking at 'and' or 'but'");
-    } else {
-        improvements.push("Sentences too long at " + stats.avgLongest + " words - break them up for impact");
-    }
-
     // Session consistency
     if (stats.sessionCount >= 5) {
-        strengths.push("Excellent consistency with " + stats.sessionCount + " sessions this week!");
+        strengths.push("Super r\u00e9gularit\u00e9 avec " + stats.sessionCount + " s\u00e9ances cette semaine !");
     } else if (stats.sessionCount >= 3) {
-        strengths.push("Good practice habit - " + stats.sessionCount + " sessions this week");
+        strengths.push("Bonne habitude \u2014 " + stats.sessionCount + " s\u00e9ances cette semaine");
     } else {
-        improvements.push("Aim for more consistency - try to practice 3-5 times per week");
+        improvements.push("Essaie de pratiquer 3 \u00e0 5 fois par semaine pour de meilleurs r\u00e9sultats");
     }
 
-    // Week-over-week comparison
+    // Variety check
+    const typesUsed = Object.keys(stats.typeBreakdown).length;
+    if (typesUsed >= 3) {
+        strengths.push("Belle vari\u00e9t\u00e9 ! Tu as essay\u00e9 " + typesUsed + " types d'activit\u00e9s diff\u00e9rentes");
+    } else {
+        improvements.push("Essaie plus de types d'activit\u00e9s \u2014 synonymes, descriptions, construction de phrases...");
+    }
+
+    // Word count
+    if (stats.avgWords >= 30) {
+        strengths.push("Bonnes r\u00e9ponses d\u00e9taill\u00e9es avec " + stats.avgWords + " mots en moyenne");
+    } else {
+        improvements.push("Essaie de d\u00e9velopper tes r\u00e9ponses \u2014 vise " + 30 + "+ mots pour les conversations");
+    }
+
+    // Comparison
     let trendNote = "";
     if (stats.comparison) {
-        if (stats.comparison.fillerChange < -1) {
-            trendNote = "📈 You reduced fillers by " + Math.abs(stats.comparison.fillerChange).toFixed(1) + " compared to last week!";
-        } else if (stats.comparison.fillerChange > 1) {
-            trendNote = "📉 Fillers increased by " + stats.comparison.fillerChange.toFixed(1) + " from last week - refocus on pausing";
+        if (stats.comparison.sessionChange > 0) {
+            trendNote = "\ud83d\udcc8 " + stats.comparison.sessionChange + " s\u00e9ance(s) de plus que la semaine derni\u00e8re !";
+        } else if (stats.comparison.sessionChange < 0) {
+            trendNote = "\ud83d\udcc9 " + Math.abs(stats.comparison.sessionChange) + " s\u00e9ance(s) de moins que la semaine derni\u00e8re";
         }
     }
 
-    // Generate focus for next week
     let focus = "";
     if (improvements.length > 0) {
-        // Pick the most important improvement
-        if (parseFloat(stats.avgFillers) > 5) {
-            focus = "This week's focus: Replace 'um' and 'like' with silent pauses. Record yourself and count fillers.";
-        } else if (stats.avgLongest > 30) {
-            focus = "This week's focus: Shorter sentences. When you use 'and', stop and start a new sentence instead.";
-        } else if (stats.avgPace < 130 || stats.avgPace > 180) {
-            focus = "This week's focus: Pace control. Practice speaking at a steady 150 wpm rhythm.";
+        if (stats.sessionCount < 3) {
+            focus = "Objectif : Pratique au moins 1 exercice par jour. La r\u00e9gularit\u00e9 est la cl\u00e9 !";
+        } else if (typesUsed < 3) {
+            focus = "Objectif : Essaie un nouveau type d'exercice que tu n'as pas encore fait.";
         } else {
-            focus = "This week's focus: Polish your delivery. Practice the AI crisp versions out loud.";
+            focus = "Objectif : Enrichis ton vocabulaire en \u00e9coutant attentivement les versions am\u00e9lior\u00e9es.";
         }
     } else {
-        focus = "Keep up the great work! Challenge yourself with the harder question categories.";
+        focus = "Continue comme \u00e7a ! Tu fais des progr\u00e8s remarquables.";
     }
 
     return {
-        summary: `${stats.sessionCount} sessions this week. Avg ${stats.avgFillers} fillers, ${stats.avgPace} wpm pace.`,
+        summary: `${stats.sessionCount} s\u00e9ances cette semaine \u2022 ${stats.avgWords} mots en moyenne`,
         strengths,
         improvements,
         focus,
@@ -1414,21 +1171,20 @@ function showWeeklyDebrief() {
 
     const debrief = generateWeeklyDebrief();
 
-    // Populate the modal
     document.getElementById('debrief-summary').textContent = debrief.summary;
 
     const strengthsList = document.getElementById('debrief-strengths');
     const improvementsList = document.getElementById('debrief-improvements');
 
     if (debrief.strengths.length > 0) {
-        strengthsList.innerHTML = debrief.strengths.map(s => `<li>✅ ${s}</li>`).join('');
+        strengthsList.innerHTML = debrief.strengths.map(s => `<li>\u2705 ${s}</li>`).join('');
         strengthsList.parentElement.classList.remove('hidden');
     } else {
         strengthsList.parentElement.classList.add('hidden');
     }
 
     if (debrief.improvements.length > 0) {
-        improvementsList.innerHTML = debrief.improvements.map(i => `<li>🎯 ${i}</li>`).join('');
+        improvementsList.innerHTML = debrief.improvements.map(i => `<li>\ud83c\udfaf ${i}</li>`).join('');
         improvementsList.parentElement.classList.remove('hidden');
     } else {
         improvementsList.parentElement.classList.add('hidden');
@@ -1446,10 +1202,9 @@ function showWeeklyDebrief() {
 
     debriefModal.classList.remove('hidden');
 
-    // Mark as shown for this week
     const now = new Date();
     const weekKey = `${now.getFullYear()}-W${getWeekNumber(now)}`;
-    localStorage.setItem('voice_drill_last_debrief', weekKey);
+    localStorage.setItem('parle_avec_moi_last_debrief', weekKey);
 }
 
 function closeWeeklyDebrief() {
@@ -1460,24 +1215,20 @@ function closeWeeklyDebrief() {
 }
 
 function checkShowWeeklyDebrief() {
-    const history = JSON.parse(localStorage.getItem('voice_drill_history') || '[]');
+    const history = JSON.parse(localStorage.getItem('parle_avec_moi_history') || '[]');
 
-    // Need at least 1 session to show debrief
     if (history.length === 0) return;
 
     const now = new Date();
-    const dayOfWeek = now.getDay(); // 0 = Sunday
+    const dayOfWeek = now.getDay();
     const hour = now.getHours();
 
-    // Show on Sunday morning (before noon) or if user manually requested
     const isSundayMorning = dayOfWeek === 0 && hour < 12;
 
-    // Check if already shown this week
     const weekKey = `${now.getFullYear()}-W${getWeekNumber(now)}`;
-    const lastShown = localStorage.getItem('voice_drill_last_debrief');
+    const lastShown = localStorage.getItem('parle_avec_moi_last_debrief');
 
     if (isSundayMorning && lastShown !== weekKey) {
-        // Small delay to let the page load
         setTimeout(() => {
             showWeeklyDebrief();
         }, 500);
@@ -1500,11 +1251,9 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgressChart();
     loadReminderSettings();
 
-    // Check if we should show weekly debrief
     checkShowWeeklyDebrief();
 
-    // Start reminder scheduler if enabled
-    const settings = JSON.parse(localStorage.getItem('voice_drill_reminder') || '{}');
+    const settings = JSON.parse(localStorage.getItem('parle_avec_moi_reminder') || '{}');
     if (settings.enabled) {
         scheduleReminder(settings.time);
     }

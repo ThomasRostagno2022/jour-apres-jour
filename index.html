@@ -1,25 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Voice Drill</title>
+    <title>Jour apr&egrave;s Jour</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Voice Drill">
+    <meta name="apple-mobile-web-app-title" content="Jour apr&egrave;s Jour">
     <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
     <!-- Password Screen -->
     <div id="password-screen" class="password-screen">
         <div class="password-card">
-            <h2>🎤 Voice Drill</h2>
-            <p>Enter password to continue</p>
-            <input type="password" id="password-input" placeholder="Password" autofocus>
-            <button id="password-submit" class="btn-primary">Enter</button>
-            <p id="password-error" class="password-error hidden">Incorrect password</p>
+            <h2>Jour apr&egrave;s Jour</h2>
+            <p class="password-subtitle">Pratique ton fran&ccedil;ais</p>
+            <input type="password" id="password-input" placeholder="Mot de passe" autofocus>
+            <button id="password-submit" class="btn-primary">Entrer</button>
+            <p id="password-error" class="password-error hidden">Mot de passe incorrect</p>
         </div>
     </div>
 
@@ -27,184 +30,151 @@
         <!-- Weekly Debrief Modal -->
         <div id="weekly-debrief-modal" class="modal hidden">
             <div class="modal-content debrief-modal">
-                <h2>📊 Weekly Debrief</h2>
+                <h2>Bilan de la Semaine</h2>
                 <p id="debrief-summary" class="debrief-summary"></p>
 
                 <div id="debrief-trend" class="debrief-trend hidden"></div>
 
                 <div class="debrief-section">
-                    <h3>💪 What You Did Well</h3>
+                    <h3>Ce que tu fais bien</h3>
                     <ul id="debrief-strengths"></ul>
                 </div>
 
                 <div class="debrief-section">
-                    <h3>🎯 What To Work On</h3>
+                    <h3>Ce qu'on peut am&eacute;liorer</h3>
                     <ul id="debrief-improvements"></ul>
                 </div>
 
                 <div class="debrief-focus">
-                    <h3>🔥 This Week's Focus</h3>
+                    <h3>Objectif de la semaine</h3>
                     <p id="debrief-focus"></p>
                 </div>
 
-                <button id="close-debrief" class="btn-primary">Got It!</button>
+                <button id="close-debrief" class="btn-primary">C'est compris !</button>
             </div>
         </div>
 
         <!-- Settings Modal -->
         <div id="settings-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>Settings</h2>
+                <h2>Param&egrave;tres</h2>
 
-                <label for="api-key">Groq API Key</label>
-                <input type="password" id="api-key" placeholder="Enter your Groq API key">
-                <p class="hint">Get your free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></p>
+                <label for="api-key">Cl&eacute; API Groq</label>
+                <input type="password" id="api-key" placeholder="Entre ta cl&eacute; API Groq">
+                <p class="hint">Obtiens ta cl&eacute; gratuite sur <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></p>
+
+                <label for="elevenlabs-key">Cl&eacute; API ElevenLabs</label>
+                <input type="password" id="elevenlabs-key" placeholder="Entre ta cl&eacute; ElevenLabs (optionnel)">
+                <p class="hint">Pour la voix naturelle : <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a></p>
 
                 <div class="reminder-section">
-                    <label>Daily Reminder</label>
+                    <label>Rappel Quotidien</label>
                     <div class="reminder-toggle">
                         <input type="checkbox" id="reminder-enabled">
-                        <span>Remind me daily at</span>
+                        <span>Me rappeler chaque jour &agrave;</span>
                         <input type="time" id="reminder-time" value="09:00">
                     </div>
-                    <button id="enable-notifications" class="btn-secondary" style="margin-top: 8px; font-size: 13px;">Enable Notifications</button>
-                    <p class="hint" id="notification-status">Notifications not enabled</p>
+                    <button id="enable-notifications" class="btn-secondary" style="margin-top: 8px; font-size: 13px;">Activer les Notifications</button>
+                    <p class="hint" id="notification-status">Notifications non activ&eacute;es</p>
                 </div>
 
                 <div class="modal-buttons">
-                    <button id="save-settings" class="btn-primary">Save</button>
-                    <button id="close-settings" class="btn-secondary">Cancel</button>
+                    <button id="save-settings" class="btn-primary">Sauvegarder</button>
+                    <button id="close-settings" class="btn-secondary">Annuler</button>
                 </div>
             </div>
         </div>
 
         <!-- Header -->
         <header>
-            <h1>Voice Drill</h1>
-            <button id="settings-btn" class="icon-btn">⚙️</button>
+            <h1>Jour apr&egrave;s Jour</h1>
+            <div class="header-actions">
+                <button id="hint-toggle" class="icon-btn active" title="Toggle English hints">EN</button>
+                <button id="settings-btn" class="icon-btn">&#9881;</button>
+            </div>
         </header>
 
-        <!-- Question Card -->
-        <div id="question-card" class="card">
-            <div class="question-category" id="question-category">Behavioral</div>
-            <p id="question-text">Tap "New Question" to start your drill</p>
+        <!-- Activity Card -->
+        <div id="activity-card" class="card">
+            <div class="activity-type-badge" id="activity-type">Conversation</div>
+            <div class="activity-category" id="activity-category">Bienvenue</div>
+            <p id="activity-prompt">Appuie sur &laquo; Nouvelle Activit&eacute; &raquo; pour commencer</p>
+            <p id="activity-hint" class="hint-text">Tap "New Activity" to start</p>
             <div class="target-info">
-                <span>Target: <strong id="target-words">120</strong> words</span>
-                <span>Time: <strong id="target-time">90</strong>s max</span>
+                <span>Objectif : <strong id="target-words">30</strong> mots</span>
+                <span>Temps : <strong id="target-time">60</strong>s</span>
             </div>
         </div>
 
         <!-- Recording Section -->
         <div id="recording-section">
             <div id="timer" class="hidden">
-                <span id="timer-display">01:30</span>
+                <span id="timer-display">01:00</span>
             </div>
             <button id="record-btn" class="record-button">
-                <span class="mic-icon">🎤</span>
-                <span id="record-label">Tap to Record</span>
+                <span class="mic-icon">&#127908;</span>
+                <span id="record-label">Appuie pour Enregistrer</span>
             </button>
         </div>
 
         <!-- Results Section -->
         <div id="results-section" class="hidden">
             <div class="card">
-                <h3>Your Answer</h3>
+                <h3>Ta R&eacute;ponse</h3>
                 <p id="transcript-text" class="transcript"></p>
-            </div>
-
-            <!-- Scorecard -->
-            <div class="card scorecard">
-                <h3>Scorecard</h3>
-                <div class="score-grid">
-                    <div class="score-item">
-                        <span class="score-label">Words</span>
-                        <span id="word-count" class="score-value">--</span>
-                        <span id="word-status" class="score-status">--</span>
-                    </div>
-                    <div class="score-item">
-                        <span class="score-label">Fillers</span>
-                        <span id="filler-count" class="score-value">--</span>
-                        <span id="filler-status" class="score-status">--</span>
-                    </div>
-                    <div class="score-item">
-                        <span class="score-label">Pace</span>
-                        <span id="pace-value" class="score-value">--</span>
-                        <span id="pace-status" class="score-status">--</span>
-                    </div>
-                    <div class="score-item">
-                        <span class="score-label">Longest Sentence</span>
-                        <span id="longest-sentence" class="score-value">--</span>
-                        <span id="sentence-status" class="score-status">--</span>
-                    </div>
+                <div class="word-count-badge">
+                    <span id="word-count">0</span> mots
                 </div>
             </div>
 
-            <!-- Fillers Detail -->
-            <div id="fillers-detail" class="card hidden">
-                <h3>Fillers Found</h3>
-                <p id="fillers-list"></p>
-            </div>
-
-            <!-- AI Rewrite -->
+            <!-- AI Feedback (auto-triggered) -->
             <div class="card">
-                <button id="rewrite-btn" class="btn-primary full-width">Get Crisp Version (AI)</button>
-                <div id="rewrite-loading" class="hidden">
+                <div id="ai-loading" class="hidden">
                     <div class="spinner"></div>
-                    <span>Generating crisp version...</span>
+                    <span>Ton prof analyse ta r&eacute;ponse...</span>
                 </div>
-                <div id="rewrite-result" class="hidden">
-                    <h3>Crisp Version</h3>
-                    <p id="rewrite-text" class="transcript crisp"></p>
-                    <div class="rewrite-stats">
-                        <span id="rewrite-word-count"></span>
-                        <span id="rewrite-reduction"></span>
-                    </div>
-                    <button id="speak-btn" class="btn-speak">🔊 Listen</button>
+                <div id="improved-result" class="hidden">
+                    <h3>Version Am&eacute;lior&eacute;e</h3>
+                    <p id="improved-text" class="transcript improved"></p>
+                    <button id="speak-btn" class="btn-speak">&#128266; &Eacute;couter</button>
                 </div>
-
-                <!-- Coaching Feedback -->
-                <div id="coaching-feedback" class="coaching-feedback hidden">
-                    <h3>💡 What To Do Differently</h3>
-                    <div id="feedback-text" class="feedback-content"></div>
+                <div id="tips-section" class="tips-section hidden">
+                    <h3>Conseils</h3>
+                    <div id="tips-text" class="tips-content"></div>
                 </div>
-                <div id="rewrite-error" class="hidden">
+                <div id="ai-error" class="hidden">
                     <p class="error-text"></p>
+                    <button id="retry-btn" class="btn-secondary" style="margin-top: 12px; width: 100%;">R&eacute;essayer</button>
                 </div>
             </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="actions">
-            <button id="new-question-btn" class="btn-primary">New Question</button>
-            <button id="reset-btn" class="btn-secondary hidden">Try Again</button>
+            <button id="new-activity-btn" class="btn-primary">Nouvelle Activit&eacute;</button>
+            <button id="reset-btn" class="btn-secondary hidden">Recommencer</button>
         </div>
 
         <!-- Progress Section -->
         <div id="progress-section" class="card">
             <div class="progress-header">
-                <h3>📈 Your Progress</h3>
-                <button id="show-debrief-btn" class="debrief-btn" title="Weekly Summary">📊</button>
-                <select id="progress-metric" class="metric-select">
-                    <option value="fillers">Filler Words</option>
-                    <option value="pace">Speaking Pace</option>
-                    <option value="words">Word Count</option>
-                    <option value="longest">Sentence Length</option>
-                </select>
+                <h3>Tes Progr&egrave;s</h3>
+                <button id="show-debrief-btn" class="debrief-btn" title="Bilan hebdomadaire">&#128202;</button>
             </div>
             <div id="progress-chart" class="progress-chart">
-                <p class="empty-state">Complete 3+ drills to see your progress</p>
+                <p class="empty-state">Fais 3+ exercices pour voir tes progr&egrave;s</p>
             </div>
             <div id="progress-stats" class="progress-stats hidden">
                 <div class="stat-item">
-                    <span class="stat-label">Sessions</span>
+                    <span class="stat-label">S&eacute;ances</span>
                     <span id="total-sessions" class="stat-value">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Avg Fillers</span>
-                    <span id="avg-fillers" class="stat-value">--</span>
+                    <span class="stat-label">Jours cons&eacute;cutifs</span>
+                    <span id="streak-count" class="stat-value">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Trend</span>
+                    <span class="stat-label">Tendance</span>
                     <span id="trend-indicator" class="stat-value">--</span>
                 </div>
             </div>
@@ -212,9 +182,9 @@
 
         <!-- History Section -->
         <div id="history-section" class="card">
-            <h3>Recent Sessions</h3>
+            <h3>S&eacute;ances R&eacute;centes</h3>
             <div id="history-list">
-                <p class="empty-state">No sessions yet. Start your first drill!</p>
+                <p class="empty-state">Pas encore de s&eacute;ances. Lance ta premi&egrave;re activit&eacute; !</p>
             </div>
         </div>
     </div>
@@ -223,7 +193,7 @@
     <script src="app.js"></script>
     <script>
         // Simple password protection
-        const PASSWORD_HASH = '5ff893f4f29f867ddc707ae049be834394f2ea79f8de7e889a3ee355ab01a119';
+        const PASSWORD_HASH = '665ad383389da8c18eee83a3ac4fa75c8a08a1970f35bcb230ffb326c38cfe7c';
 
         async function hashPassword(password) {
             const encoder = new TextEncoder();
@@ -236,8 +206,8 @@
             const input = document.getElementById('password-input').value;
             const hash = await hashPassword(input);
 
-            if (hash === PASSWORD_HASH || localStorage.getItem('voice_drill_auth') === 'true') {
-                localStorage.setItem('voice_drill_auth', 'true');
+            if (hash === PASSWORD_HASH || localStorage.getItem('parle_avec_moi_auth') === 'true') {
+                localStorage.setItem('parle_avec_moi_auth', 'true');
                 document.getElementById('password-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
             } else {
@@ -247,7 +217,7 @@
         }
 
         // Check if already authenticated
-        if (localStorage.getItem('voice_drill_auth') === 'true') {
+        if (localStorage.getItem('parle_avec_moi_auth') === 'true') {
             document.getElementById('password-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
         }
