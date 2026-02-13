@@ -3,7 +3,17 @@
 const DEFAULT_GROQ_KEY = ['gsk_DJtowUxnkrNBdieWUGDG', 'WGdyb3FYltJH62LU8Uqd7kNB3bNJntmU'].join('');
 const DEFAULT_ELEVENLABS_KEY = ['sk_116ea5a2737312a826b3', '447f0f2ff466fe4ac8f08941870a'].join('');
 
-// State
+// ========================
+// App State Machine
+// ========================
+const APP_STATE = {
+    PICKER: 'picker',
+    ACTIVITY_VOICE: 'voice',
+    ACTIVITY_TILES: 'tiles',
+    RESULTS: 'results'
+};
+
+let currentState = APP_STATE.PICKER;
 let currentActivity = null;
 let isRecording = false;
 let mediaRecorder = null;
@@ -14,6 +24,7 @@ let timerInterval = null;
 let timeRemaining = 60;
 let isSpeaking = false;
 let showHints = true;
+let selectedTiles = new Set();
 
 // DOM Elements
 const activityCard = document.getElementById('activity-card');
@@ -45,15 +56,94 @@ const aiError = document.getElementById('ai-error');
 const speakBtn = document.getElementById('speak-btn');
 const hintToggle = document.getElementById('hint-toggle');
 const wordCountEl = document.getElementById('word-count');
+const activityPicker = document.getElementById('activity-picker');
+const backToPickerBtn = document.getElementById('back-to-picker');
+const tileSelectionSection = document.getElementById('tile-selection-section');
+const recordingSection = document.getElementById('recording-section');
+const progressSection = document.getElementById('progress-section');
+const historySection = document.getElementById('history-section');
+const actionsSection = document.getElementById('actions-section');
+const targetInfo = document.getElementById('target-info');
 
+// ========================
+// State Management
+// ========================
+function setState(newState) {
+    currentState = newState;
+
+    // Hide everything first
+    activityPicker.classList.add('hidden');
+    activityCard.classList.add('hidden');
+    recordingSection.classList.add('hidden');
+    tileSelectionSection.classList.add('hidden');
+    resultsSection.classList.add('hidden');
+    backToPickerBtn.classList.add('hidden');
+    newActivityBtn.classList.add('hidden');
+    resetBtn.classList.add('hidden');
+
+    switch (newState) {
+        case APP_STATE.PICKER:
+            activityPicker.classList.remove('hidden');
+            progressSection.classList.remove('hidden');
+            historySection.classList.remove('hidden');
+            break;
+        case APP_STATE.ACTIVITY_VOICE:
+            activityCard.classList.remove('hidden');
+            recordingSection.classList.remove('hidden');
+            backToPickerBtn.classList.remove('hidden');
+            progressSection.classList.add('hidden');
+            historySection.classList.add('hidden');
+            break;
+        case APP_STATE.ACTIVITY_TILES:
+            activityCard.classList.remove('hidden');
+            tileSelectionSection.classList.remove('hidden');
+            backToPickerBtn.classList.remove('hidden');
+            progressSection.classList.add('hidden');
+            historySection.classList.add('hidden');
+            break;
+        case APP_STATE.RESULTS:
+            activityCard.classList.remove('hidden');
+            resultsSection.classList.remove('hidden');
+            backToPickerBtn.classList.remove('hidden');
+            newActivityBtn.classList.remove('hidden');
+            progressSection.classList.add('hidden');
+            historySection.classList.add('hidden');
+            // Keep tiles visible if it was a tile activity
+            if (currentActivity && (currentActivity.type === 'synonyms' || currentActivity.type === 'antonyms')) {
+                tileSelectionSection.classList.remove('hidden');
+            }
+            break;
+    }
+}
+
+// ========================
+// Picker Initialization
+// ========================
+function initPicker() {
+    document.querySelectorAll('.picker-tile').forEach(tile => {
+        const type = tile.dataset.type;
+        const countEl = tile.querySelector('.picker-count');
+        if (countEl && ACTIVITY_TYPE_COUNTS[type]) {
+            countEl.textContent = `${ACTIVITY_TYPE_COUNTS[type]} activities`;
+        }
+        tile.addEventListener('click', () => {
+            loadNewActivity(type);
+        });
+    });
+}
+
+// ========================
 // Show status message
+// ========================
 function showStatus(msg) {
     if (transcriptText) {
         transcriptText.textContent = msg;
     }
 }
 
+// ========================
 // Timer functions
+// ========================
 function startTimer() {
     timeRemaining = currentActivity ? currentActivity.targetTime : 60;
     updateTimerDisplay();
@@ -84,18 +174,20 @@ function updateTimerDisplay() {
     timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// Recording functions using MediaRecorder
+// ========================
+// Recording functions
+// ========================
 async function startRecording() {
     try {
-        showStatus('Acc\u00e8s au microphone...');
+        showStatus('Accessing microphone...');
 
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true
         });
 
-        showStatus('Micro pr\u00eat ! Parle maintenant...');
+        showStatus('Microphone ready! Speak now...');
 
-        // Determine supported mime type - iOS Safari uses mp4/aac
+        // Determine supported mime type
         let mimeType = '';
         let fileExtension = 'webm';
 
@@ -138,12 +230,12 @@ async function startRecording() {
                 console.log('Audio blob size:', audioBlob.size, 'type:', blobType);
                 await transcribeAudio(audioBlob, mediaRecorder.fileExtension);
             } else {
-                showStatus('Pas d\u2019audio enregistr\u00e9. R\u00e9essaie.');
+                showStatus('No audio recorded. Try again.');
             }
         };
 
         mediaRecorder.onerror = (event) => {
-            showStatus('Erreur d\u2019enregistrement : ' + event.error);
+            showStatus('Recording error: ' + event.error);
         };
 
         mediaRecorder.start(1000);
@@ -153,7 +245,7 @@ async function startRecording() {
         startTime = Date.now();
 
         recordBtn.classList.add('recording');
-        recordLabel.textContent = 'Appuie pour Arr\u00eater';
+        recordLabel.textContent = 'Tap to Stop';
         resetBtn.classList.add('hidden');
         resultsSection.classList.remove('hidden');
 
@@ -162,10 +254,10 @@ async function startRecording() {
     } catch (err) {
         console.error('Microphone error:', err);
         if (err.name === 'NotAllowedError') {
-            showStatus('Acc\u00e8s au micro refus\u00e9. Autorise le micro dans les r\u00e9glages.');
-            alert('Acc\u00e8s au micro refus\u00e9.\n\nSur iPhone :\n1. Va dans R\u00e9glages > Safari\n2. D\u00e9file vers "R\u00e9glages des sites web"\n3. Appuie sur Microphone\n4. S\u00e9lectionne "Autoriser"');
+            showStatus('Microphone access denied. Please allow microphone in settings.');
+            alert('Microphone access denied.\n\nOn iPhone:\n1. Go to Settings > Safari\n2. Scroll to "Settings for Websites"\n3. Tap Microphone\n4. Select "Allow"');
         } else {
-            showStatus('Erreur : ' + err.message);
+            showStatus('Error: ' + err.message);
         }
     }
 }
@@ -175,10 +267,10 @@ function stopRecording() {
     stopTimer();
 
     recordBtn.classList.remove('recording');
-    recordLabel.textContent = 'Appuie pour Enregistrer';
+    recordLabel.textContent = 'Tap to Record';
 
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        showStatus('Traitement de l\u2019audio...');
+        showStatus('Processing audio...');
         mediaRecorder.stop();
     }
 }
@@ -188,12 +280,12 @@ async function transcribeAudio(audioBlob, fileExtension = 'webm') {
     const apiKey = localStorage.getItem('grok_api_key') || DEFAULT_GROQ_KEY;
 
     if (!apiKey) {
-        showStatus('Configure ta cl\u00e9 API Groq dans les param\u00e8tres.');
+        showStatus('Configure your Groq API key in settings.');
         settingsModal.classList.remove('hidden');
         return;
     }
 
-    showStatus('Transcription en cours...');
+    showStatus('Transcribing...');
 
     try {
         const filename = `recording.${fileExtension}`;
@@ -216,7 +308,7 @@ async function transcribeAudio(audioBlob, fileExtension = 'webm') {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error?.message || `Transcription \u00e9chou\u00e9e : ${response.status}`);
+            throw new Error(errorData.error?.message || `Transcription failed: ${response.status}`);
         }
 
         const data = await response.json();
@@ -228,18 +320,17 @@ async function transcribeAudio(audioBlob, fileExtension = 'webm') {
             transcript = rawTranscript;
             showResults(transcript, durationSeconds);
         } else {
-            showStatus('Aucune parole d\u00e9tect\u00e9e. Parle plus fort et r\u00e9essaie.');
+            showStatus('No speech detected. Speak louder and try again.');
         }
 
     } catch (error) {
         console.error('Transcription error:', error);
-        showStatus('Transcription \u00e9chou\u00e9e : ' + error.message);
+        showStatus('Transcription failed: ' + error.message);
     }
 }
 
 function toggleRecording() {
     if (!currentActivity) {
-        loadNewActivity();
         return;
     }
 
@@ -250,22 +341,24 @@ function toggleRecording() {
     }
 }
 
+// ========================
 // Analysis functions
+// ========================
 function countWords(text) {
     const cleanText = text.replace(/[\[\]]/g, '');
     return cleanText.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 
+// ========================
 // Results display
+// ========================
 function showResults(text, durationSeconds) {
     transcriptText.textContent = text;
 
     const wordCount = countWords(text);
-
     wordCountEl.textContent = wordCount;
 
-    // Show results
-    resultsSection.classList.remove('hidden');
+    setState(APP_STATE.RESULTS);
     resetBtn.classList.remove('hidden');
 
     // Save to history
@@ -275,7 +368,224 @@ function showResults(text, durationSeconds) {
     getAIFeedback();
 }
 
-// Groq API for French tutor feedback
+// ========================
+// Tile Selection System (Synonyms/Antonyms)
+// ========================
+function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function setupTileSelection() {
+    selectedTiles = new Set();
+    const container = document.getElementById('word-tiles');
+    const checkBtn = document.getElementById('check-tiles-btn');
+    const instructionText = document.getElementById('tile-instruction-text');
+
+    checkBtn.disabled = true;
+    checkBtn.textContent = 'Check My Answers';
+
+    // Set instruction text
+    if (currentActivity.type === 'synonyms') {
+        instructionText.textContent = 'Select the synonyms:';
+    } else {
+        instructionText.textContent = 'Select the antonyms:';
+    }
+
+    // Pick 3 correct answers from expectedExamples
+    const correctWords = shuffleArray([...currentActivity.expectedExamples]).slice(0, 3);
+
+    // Get 3 distractors
+    let distractorWords;
+    if (currentActivity.distractors && currentActivity.distractors.length >= 3) {
+        distractorWords = shuffleArray([...currentActivity.distractors]).slice(0, 3);
+    } else {
+        distractorWords = generateDistractors(currentActivity);
+    }
+
+    // Combine and shuffle
+    const allTiles = shuffleArray([
+        ...correctWords.map(w => ({ word: w, correct: true })),
+        ...distractorWords.map(w => ({ word: w, correct: false }))
+    ]);
+
+    // Render tiles
+    container.innerHTML = allTiles.map((tile, i) => `
+        <button class="word-tile" data-index="${i}" data-word="${tile.word}" data-correct="${tile.correct}">
+            ${tile.word}
+        </button>
+    `).join('');
+
+    // Add click handlers
+    container.querySelectorAll('.word-tile').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.classList.contains('revealed')) return;
+            const idx = btn.dataset.index;
+            if (selectedTiles.has(idx)) {
+                selectedTiles.delete(idx);
+                btn.classList.remove('selected');
+            } else {
+                selectedTiles.add(idx);
+                btn.classList.add('selected');
+            }
+            checkBtn.disabled = selectedTiles.size === 0;
+        });
+    });
+}
+
+function generateDistractors(activity) {
+    const sameTypeActivities = ACTIVITIES.filter(a =>
+        a.type === activity.type && a.prompt !== activity.prompt
+    );
+    const pool = [];
+    sameTypeActivities.forEach(a => {
+        if (a.expectedExamples) pool.push(...a.expectedExamples);
+    });
+    const filtered = pool.filter(w => !activity.expectedExamples.includes(w));
+    return shuffleArray(filtered).slice(0, 3);
+}
+
+function checkTileAnswers() {
+    const container = document.getElementById('word-tiles');
+    const tiles = container.querySelectorAll('.word-tile');
+    const checkBtn = document.getElementById('check-tiles-btn');
+
+    // Reveal correct/incorrect
+    tiles.forEach(tile => {
+        const isCorrect = tile.dataset.correct === 'true';
+        const isSelected = selectedTiles.has(tile.dataset.index);
+
+        tile.classList.add('revealed');
+
+        if (isCorrect) {
+            tile.classList.add('correct-answer');
+            if (isSelected) {
+                tile.classList.add('correct-selected');
+            } else {
+                tile.classList.add('correct-missed');
+            }
+        } else {
+            if (isSelected) {
+                tile.classList.add('incorrect-selected');
+            }
+        }
+
+        tile.disabled = true;
+    });
+
+    // Update check button
+    checkBtn.disabled = true;
+    checkBtn.textContent = 'Checked!';
+
+    // Build transcript from selections
+    const selectedWords = [];
+    tiles.forEach(tile => {
+        if (selectedTiles.has(tile.dataset.index)) {
+            selectedWords.push(tile.dataset.word);
+        }
+    });
+
+    transcript = selectedWords.join(', ');
+
+    // Count correct selections
+    let correctCount = 0;
+    tiles.forEach(tile => {
+        if (selectedTiles.has(tile.dataset.index) && tile.dataset.correct === 'true') {
+            correctCount++;
+        }
+    });
+
+    // Show results
+    setState(APP_STATE.RESULTS);
+    tileSelectionSection.classList.remove('hidden');
+
+    transcriptText.textContent = `You selected: ${transcript}`;
+    wordCountEl.textContent = `${correctCount}/3`;
+
+    saveToHistory(correctCount, currentActivity.type, currentActivity.category);
+    getAIFeedback();
+}
+
+// ========================
+// Activity Loading
+// ========================
+function loadNewActivity(type) {
+    // Get all activities of the requested type
+    const typeActivities = ACTIVITIES.filter(a => a.type === type);
+
+    // Per-type repeat tracking
+    const askedKey = `parle_avec_moi_asked_${type}`;
+    let askedIndices = JSON.parse(localStorage.getItem(askedKey) || '[]');
+
+    // Reset if all of this type have been asked
+    if (askedIndices.length >= typeActivities.length) {
+        console.log(`All ${type} activities done! Resetting list.`);
+        askedIndices = [];
+    }
+
+    // Get available activities (not yet asked)
+    const availableIndices = typeActivities.map((_, i) => i).filter(i => !askedIndices.includes(i));
+
+    // Pick a random one
+    const randomLocalIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    currentActivity = typeActivities[randomLocalIndex];
+
+    // Track this activity as asked
+    askedIndices.push(randomLocalIndex);
+    localStorage.setItem(askedKey, JSON.stringify(askedIndices));
+
+    console.log(`Activity ${askedIndices.length}/${typeActivities.length}: "${currentActivity.prompt.substring(0, 50)}..."`);
+
+    // Update UI
+    const icon = ACTIVITY_TYPE_ICONS[currentActivity.type] || '';
+    const label = ACTIVITY_TYPE_LABELS[currentActivity.type] || currentActivity.type;
+    activityType.textContent = `${icon} ${label}`;
+    activityType.className = `activity-type-badge ${currentActivity.type}`;
+    activityCategory.textContent = currentActivity.category;
+
+    // Show prompt based on activity type
+    if (currentActivity.type === 'synonyms') {
+        activityPrompt.innerHTML = `<span class="prompt-word">${currentActivity.prompt}</span><br><span class="prompt-instruction">Select the synonyms below!</span>`;
+        targetInfo.classList.add('hidden');
+    } else if (currentActivity.type === 'antonyms') {
+        activityPrompt.innerHTML = `<span class="prompt-word">${currentActivity.prompt}</span><br><span class="prompt-instruction">Select the antonyms below!</span>`;
+        targetInfo.classList.add('hidden');
+    } else if (currentActivity.type === 'sentence_building') {
+        const words = currentActivity.prompt.split(' / ');
+        activityPrompt.innerHTML = `<div class="word-chips">${words.map(w => `<span class="word-chip">${w}</span>`).join('')}</div><span class="prompt-instruction">Build a sentence with these words!</span>`;
+        targetInfo.classList.remove('hidden');
+    } else {
+        activityPrompt.textContent = currentActivity.prompt;
+        targetInfo.classList.remove('hidden');
+    }
+
+    // Show/hide hint
+    activityHint.textContent = currentActivity.hint;
+    activityHint.classList.toggle('hidden', !showHints);
+
+    targetWordsEl.textContent = currentActivity.targetWords;
+    targetTimeEl.textContent = currentActivity.targetTime;
+
+    // Reset
+    transcript = '';
+    timer.classList.add('hidden');
+    recordLabel.textContent = 'Tap to Record';
+
+    // Set correct state based on type
+    if (type === 'synonyms' || type === 'antonyms') {
+        setState(APP_STATE.ACTIVITY_TILES);
+        setupTileSelection();
+    } else {
+        setState(APP_STATE.ACTIVITY_VOICE);
+    }
+}
+
+// ========================
+// AI Feedback
+// ========================
 async function getAIFeedback() {
     const apiKey = localStorage.getItem('grok_api_key') || DEFAULT_GROQ_KEY;
 
@@ -302,20 +612,20 @@ TYPE D'ACTIVIT\u00c9: ${label}
 MOT DONN\u00c9: "${currentActivity.prompt}"
 EXEMPLES ATTENDUS: ${currentActivity.expectedExamples ? currentActivity.expectedExamples.join(', ') : ''}
 
-SA R\u00c9PONSE:
+ELLE A S\u00c9LECTIONN\u00c9 CES MOTS:
 "${transcript}"
 
 T\u00c2CHE:
-1. Analyse les ${label} qu'elle a donn\u00e9s
-2. Dis-lui lesquels sont corrects
-3. Propose d'autres ${label} qu'elle aurait pu dire
-4. Donne un exemple de phrase avec un des ${label}
+1. Dis-lui lesquels de ses choix sont des ${label} corrects de "${currentActivity.prompt}"
+2. Explique la nuance de CHAQUE mot qu'elle a s\u00e9lectionn\u00e9 (m\u00eame les incorrects) - pourquoi c'est un bon ou mauvais ${label}
+3. Donne 2-3 autres ${label} qu'elle aurait pu choisir
+4. Donne un exemple de phrase avec un des ${label} pour montrer l'usage
 
 FORMAT EXACT:
 ---IMPROVED---
-[Liste des bons ${label} + autres suggestions avec exemples de phrases]
+[Analyse de chaque mot s\u00e9lectionn\u00e9 avec nuances et exemples de phrases]
 ---TIPS---
-[2-3 tips in English about vocabulary and usage]`;
+[2-3 tips in English about the vocabulary and subtle differences between the words]`;
     } else if (activityTypeStr === 'sentence_building') {
         prompt = `Tu es un professeur de fran\u00e7ais bienveillant et encourageant.
 
@@ -430,13 +740,15 @@ FORMAT EXACT:
     }
 }
 
+// ========================
 // History management
+// ========================
 function saveToHistory(wordCount, activityType, category) {
     const history = JSON.parse(localStorage.getItem('parle_avec_moi_history') || '[]');
 
     history.unshift({
         date: new Date().toISOString(),
-        activity: currentActivity ? currentActivity.prompt.substring(0, 50) + '...' : 'Inconnu',
+        activity: currentActivity ? currentActivity.prompt.substring(0, 50) + '...' : 'Unknown',
         activityType: activityType,
         category: category,
         wordCount
@@ -457,7 +769,7 @@ function updateHistoryDisplay() {
     const historyList = document.getElementById('history-list');
 
     if (history.length === 0) {
-        historyList.innerHTML = '<p class="empty-state">Pas encore de s\u00e9ances. Lance ta premi\u00e8re activit\u00e9 !</p>';
+        historyList.innerHTML = '<p class="empty-state">No sessions yet. Start your first activity!</p>';
         return;
     }
 
@@ -465,6 +777,8 @@ function updateHistoryDisplay() {
         const date = new Date(item.date);
         const dateStr = date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' });
         const icon = ACTIVITY_TYPE_ICONS[item.activityType] || '\ud83d\udcac';
+        const isTileType = item.activityType === 'synonyms' || item.activityType === 'antonyms';
+        const countLabel = isTileType ? `${item.wordCount}/3 correct` : `${item.wordCount} words`;
 
         return `
             <div class="history-item">
@@ -472,7 +786,7 @@ function updateHistoryDisplay() {
                     <div class="history-date">${icon} ${dateStr}</div>
                 </div>
                 <div class="history-stats">
-                    <span class="history-stat">${item.wordCount} mots</span>
+                    <span class="history-stat">${countLabel}</span>
                     <span class="history-stat type-badge-sm">${ACTIVITY_TYPE_LABELS[item.activityType] || item.activityType}</span>
                 </div>
             </div>
@@ -480,65 +794,9 @@ function updateHistoryDisplay() {
     }).join('');
 }
 
-// Activity loading with tracking to avoid repeats
-function loadNewActivity() {
-    let askedActivities = JSON.parse(localStorage.getItem('parle_avec_moi_asked_activities') || '[]');
-
-    // If we've asked all activities, reset the list
-    if (askedActivities.length >= ACTIVITIES.length) {
-        console.log('All activities done! Resetting list.');
-        askedActivities = [];
-    }
-
-    // Get available activities (not yet asked)
-    const availableIndices = ACTIVITIES.map((_, i) => i).filter(i => !askedActivities.includes(i));
-
-    // Pick a random activity
-    const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    currentActivity = ACTIVITIES[randomIndex];
-
-    // Track this activity as asked
-    askedActivities.push(randomIndex);
-    localStorage.setItem('parle_avec_moi_asked_activities', JSON.stringify(askedActivities));
-
-    console.log(`Activity ${askedActivities.length}/${ACTIVITIES.length}: "${currentActivity.prompt.substring(0, 50)}..."`);
-
-    // Update UI
-    const icon = ACTIVITY_TYPE_ICONS[currentActivity.type] || '';
-    const label = ACTIVITY_TYPE_LABELS[currentActivity.type] || currentActivity.type;
-    activityType.textContent = `${icon} ${label}`;
-    activityType.className = `activity-type-badge ${currentActivity.type}`;
-    activityCategory.textContent = currentActivity.category;
-
-    // Show prompt based on activity type
-    if (currentActivity.type === 'synonyms') {
-        activityPrompt.innerHTML = `<span class="prompt-word">${currentActivity.prompt}</span><br><span class="prompt-instruction">Donne le plus de synonymes possible !</span>`;
-    } else if (currentActivity.type === 'antonyms') {
-        activityPrompt.innerHTML = `<span class="prompt-word">${currentActivity.prompt}</span><br><span class="prompt-instruction">Donne le plus d'antonymes possible !</span>`;
-    } else if (currentActivity.type === 'sentence_building') {
-        const words = currentActivity.prompt.split(' / ');
-        activityPrompt.innerHTML = `<div class="word-chips">${words.map(w => `<span class="word-chip">${w}</span>`).join('')}</div><span class="prompt-instruction">Construis une phrase avec ces mots !</span>`;
-    } else {
-        activityPrompt.textContent = currentActivity.prompt;
-    }
-
-    // Show/hide hint
-    activityHint.textContent = currentActivity.hint;
-    activityHint.classList.toggle('hidden', !showHints);
-
-    targetWordsEl.textContent = currentActivity.targetWords;
-    targetTimeEl.textContent = currentActivity.targetTime;
-
-    // Reset UI
-    resultsSection.classList.add('hidden');
-    resetBtn.classList.add('hidden');
-    timer.classList.add('hidden');
-    transcript = '';
-
-    recordLabel.textContent = 'Appuie pour Enregistrer';
-}
-
+// ========================
 // Settings
+// ========================
 const elevenlabsKeyInput = document.getElementById('elevenlabs-key');
 
 function openSettings() {
@@ -573,10 +831,11 @@ function saveSettings() {
     closeSettings();
 }
 
-// Audio player for ElevenLabs
+// ========================
+// Text-to-Speech
+// ========================
 let audioPlayer = null;
 
-// Text-to-speech for improved version
 async function speakImprovedVersion() {
     const text = improvedText.textContent;
 
@@ -599,11 +858,11 @@ async function speakImprovedVersion() {
         }
         window.speechSynthesis.cancel();
         isSpeaking = false;
-        speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
+        speakBtn.textContent = '\ud83d\udd0a Listen';
         return;
     }
 
-    // Try ElevenLabs first for natural voice
+    // Try ElevenLabs first
     const elevenLabsKey = localStorage.getItem('elevenlabs_api_key') || DEFAULT_ELEVENLABS_KEY;
     if (elevenLabsKey) {
         await speakWithElevenLabs(text, elevenLabsKey);
@@ -612,14 +871,12 @@ async function speakImprovedVersion() {
     }
 }
 
-// ElevenLabs TTS (natural French voice)
 async function speakWithElevenLabs(text, apiKey) {
-    speakBtn.textContent = '\u23f3 Chargement...';
+    speakBtn.textContent = '\u23f3 Loading...';
     isSpeaking = true;
 
     try {
-        // Using a French-compatible voice with multilingual model
-        const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel - works well with multilingual v2
+        const voiceId = '21m00Tcm4TlvDq8ikWAM';
 
         console.log('Calling ElevenLabs API...');
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -667,7 +924,7 @@ async function speakWithElevenLabs(text, apiKey) {
 
         source.onended = () => {
             isSpeaking = false;
-            speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
+            speakBtn.textContent = '\ud83d\udd0a Listen';
             audioContext.close();
         };
 
@@ -680,15 +937,14 @@ async function speakWithElevenLabs(text, apiKey) {
     } catch (error) {
         console.error('ElevenLabs TTS error:', error);
         isSpeaking = false;
-        speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
+        speakBtn.textContent = '\ud83d\udd0a Listen';
         console.log('Falling back to browser TTS');
         speakWithBrowser(text);
     }
 }
 
-// Browser TTS fallback - French voice
 function speakWithBrowser(text) {
-    speakBtn.textContent = '\u23f3 Chargement...';
+    speakBtn.textContent = '\u23f3 Loading...';
     isSpeaking = true;
 
     window.speechSynthesis.cancel();
@@ -720,13 +976,13 @@ function speakWithBrowser(text) {
 
         utterance.onend = () => {
             isSpeaking = false;
-            speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
+            speakBtn.textContent = '\ud83d\udd0a Listen';
         };
 
         utterance.onerror = (e) => {
             console.error('Speech error:', e);
             isSpeaking = false;
-            speakBtn.textContent = '\ud83d\udd0a \u00c9couter';
+            speakBtn.textContent = '\ud83d\udd0a Listen';
         };
 
         setTimeout(() => {
@@ -736,7 +992,7 @@ function speakWithBrowser(text) {
                 if (window.speechSynthesis.paused) {
                     window.speechSynthesis.resume();
                 }
-                if (speakBtn.textContent === '\u23f3 Chargement...') {
+                if (speakBtn.textContent === '\u23f3 Loading...') {
                     if (!window.speechSynthesis.speaking) {
                         window.speechSynthesis.cancel();
                         window.speechSynthesis.speak(utterance);
@@ -756,7 +1012,7 @@ function speakWithBrowser(text) {
             doSpeak();
         };
         setTimeout(() => {
-            if (speakBtn.textContent === '\u23f3 Chargement...') {
+            if (speakBtn.textContent === '\u23f3 Loading...') {
                 doSpeak();
             }
         }, 1000);
@@ -774,15 +1030,42 @@ function toggleHints() {
     }
 }
 
+// ========================
 // Event listeners
+// ========================
 recordBtn.addEventListener('click', toggleRecording);
-newActivityBtn.addEventListener('click', loadNewActivity);
-resetBtn.addEventListener('click', () => {
-    resultsSection.classList.add('hidden');
-    resetBtn.classList.add('hidden');
-    timer.classList.add('hidden');
-    transcript = '';
+
+// New Activity button returns to picker
+newActivityBtn.addEventListener('click', () => {
+    if (isRecording) stopRecording();
+    if (isSpeaking) speakImprovedVersion();
+    setState(APP_STATE.PICKER);
+    currentActivity = null;
 });
+
+// Try Again resets current activity
+resetBtn.addEventListener('click', () => {
+    if (currentActivity) {
+        const type = currentActivity.type;
+        if (type === 'synonyms' || type === 'antonyms') {
+            setState(APP_STATE.ACTIVITY_TILES);
+            setupTileSelection();
+        } else {
+            setState(APP_STATE.ACTIVITY_VOICE);
+            transcript = '';
+            timer.classList.add('hidden');
+        }
+    }
+});
+
+// Back to picker
+backToPickerBtn.addEventListener('click', () => {
+    if (isRecording) stopRecording();
+    if (isSpeaking) speakImprovedVersion();
+    setState(APP_STATE.PICKER);
+    currentActivity = null;
+});
+
 settingsBtn.addEventListener('click', openSettings);
 closeSettingsBtn.addEventListener('click', closeSettings);
 saveSettingsBtn.addEventListener('click', saveSettings);
@@ -813,16 +1096,21 @@ document.addEventListener('click', (e) => {
     if (e.target.id === 'retry-btn') {
         getAIFeedback();
     }
+    if (e.target.id === 'check-tiles-btn') {
+        checkTileAnswers();
+    }
 });
 
-// Progress chart functionality
+// ========================
+// Progress chart
+// ========================
 function updateProgressChart() {
     const history = JSON.parse(localStorage.getItem('parle_avec_moi_history') || '[]');
     const chartContainer = document.getElementById('progress-chart');
     const progressStats = document.getElementById('progress-stats');
 
     if (history.length < 3) {
-        chartContainer.innerHTML = '<p class="empty-state">Fais 3+ exercices pour voir tes progr\u00e8s</p>';
+        chartContainer.innerHTML = '<p class="empty-state">Complete 3+ exercises to see your progress</p>';
         progressStats.classList.add('hidden');
         return;
     }
@@ -834,7 +1122,6 @@ function updateProgressChart() {
     const values = recentHistory.map(h => h.wordCount);
     const maxValue = Math.max(...values, 1);
 
-    // Build chart HTML
     chartContainer.innerHTML = recentHistory.map((h, i) => {
         const value = h.wordCount;
         const height = Math.max(10, (value / maxValue) * 100);
@@ -874,10 +1161,10 @@ function updateProgressChart() {
             trendIndicator.textContent = '\u2192 Stable';
             trendIndicator.className = 'stat-value';
         } else if (improvement > 0) {
-            trendIndicator.textContent = '\u2191 En progr\u00e8s';
+            trendIndicator.textContent = '\u2191 Improving';
             trendIndicator.className = 'stat-value improving';
         } else {
-            trendIndicator.textContent = '\u2193 \u00c0 travailler';
+            trendIndicator.textContent = '\u2193 Needs Work';
             trendIndicator.className = 'stat-value declining';
         }
     } else {
@@ -892,7 +1179,6 @@ function calculateStreak(history) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Check each day backwards
     for (let i = 0; i < 365; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(checkDate.getDate() - i);
@@ -903,7 +1189,6 @@ function calculateStreak(history) {
         if (hasSession) {
             streak++;
         } else if (i === 0) {
-            // Today doesn't count against streak if no session yet
             continue;
         } else {
             break;
@@ -916,7 +1201,6 @@ function calculateStreak(history) {
 // ========================
 // Daily Reminder System
 // ========================
-
 const reminderEnabled = document.getElementById('reminder-enabled');
 const reminderTime = document.getElementById('reminder-time');
 const enableNotificationsBtn = document.getElementById('enable-notifications');
@@ -924,23 +1208,23 @@ const notificationStatus = document.getElementById('notification-status');
 
 function updateNotificationStatus() {
     if (!('Notification' in window)) {
-        if (notificationStatus) notificationStatus.textContent = 'Notifications non support\u00e9es sur cet appareil';
+        if (notificationStatus) notificationStatus.textContent = 'Notifications not supported on this device';
         return;
     }
 
     if (Notification.permission === 'granted') {
-        if (notificationStatus) notificationStatus.textContent = '\u2713 Notifications activ\u00e9es';
+        if (notificationStatus) notificationStatus.textContent = '\u2713 Notifications enabled';
         if (enableNotificationsBtn) enableNotificationsBtn.style.display = 'none';
     } else if (Notification.permission === 'denied') {
-        if (notificationStatus) notificationStatus.textContent = '\u2717 Notifications bloqu\u00e9es - active-les dans les r\u00e9glages';
+        if (notificationStatus) notificationStatus.textContent = '\u2717 Notifications blocked - enable in settings';
     } else {
-        if (notificationStatus) notificationStatus.textContent = 'Appuie pour activer les notifications';
+        if (notificationStatus) notificationStatus.textContent = 'Tap to enable notifications';
     }
 }
 
 async function requestNotificationPermission() {
     if (!('Notification' in window)) {
-        alert('Les notifications ne sont pas support\u00e9es sur cet appareil.');
+        alert('Notifications are not supported on this device.');
         return;
     }
 
@@ -950,7 +1234,7 @@ async function requestNotificationPermission() {
 
         if (permission === 'granted') {
             new Notification('Jour apr\u00e8s Jour', {
-                body: 'Les rappels sont activ\u00e9s ! On te rappellera de pratiquer.',
+                body: 'Reminders are enabled! We\'ll remind you to practice.',
                 icon: 'icon-192.png'
             });
         }
@@ -1011,8 +1295,8 @@ function scheduleReminder(timeStr) {
 
 function showReminder() {
     if (Notification.permission === 'granted') {
-        const notification = new Notification('\ud83c\uddeb\ud83c\uddf7 Jour apr\u00e8s Jour !', {
-            body: 'C\u2019est l\u2019heure de pratiquer ton fran\u00e7ais ! 5 minutes suffisent.',
+        const notification = new Notification('\ud83c\uddeb\ud83c\uddf7 Jour apr\u00e8s Jour!', {
+            body: 'Time to practice your French! 5 minutes is all you need.',
             icon: 'icon-192.png',
             tag: 'jour-apres-jour-reminder',
             requireInteraction: true
@@ -1040,7 +1324,6 @@ if (reminderTime) {
 // ========================
 // Weekly Debrief System
 // ========================
-
 function getWeekNumber(date) {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -1063,14 +1346,12 @@ function getWeeklyStats() {
 
     const avgWords = thisWeekSessions.reduce((sum, h) => sum + h.wordCount, 0) / thisWeekSessions.length;
 
-    // Activity type breakdown
     const typeBreakdown = {};
     thisWeekSessions.forEach(h => {
         const type = h.activityType || 'conversation';
         typeBreakdown[type] = (typeBreakdown[type] || 0) + 1;
     });
 
-    // Get previous week for comparison
     const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
     const lastWeekSessions = history.filter(h => {
         const date = new Date(h.date);
@@ -1098,65 +1379,61 @@ function generateWeeklyDebrief() {
 
     if (!stats) {
         return {
-            summary: "Pas de s\u00e9ances cette semaine. C'est le moment de commencer !",
+            summary: "No sessions this week. Time to get started!",
             strengths: [],
             improvements: [],
-            focus: "Fais au moins 3 exercices cette semaine."
+            focus: "Try to do at least 3 exercises this week."
         };
     }
 
     const strengths = [];
     const improvements = [];
 
-    // Session consistency
     if (stats.sessionCount >= 5) {
-        strengths.push("Super r\u00e9gularit\u00e9 avec " + stats.sessionCount + " s\u00e9ances cette semaine !");
+        strengths.push("Great consistency with " + stats.sessionCount + " sessions this week!");
     } else if (stats.sessionCount >= 3) {
-        strengths.push("Bonne habitude \u2014 " + stats.sessionCount + " s\u00e9ances cette semaine");
+        strengths.push("Good habit \u2014 " + stats.sessionCount + " sessions this week");
     } else {
-        improvements.push("Essaie de pratiquer 3 \u00e0 5 fois par semaine pour de meilleurs r\u00e9sultats");
+        improvements.push("Try to practice 3\u20135 times per week for better results");
     }
 
-    // Variety check
     const typesUsed = Object.keys(stats.typeBreakdown).length;
     if (typesUsed >= 3) {
-        strengths.push("Belle vari\u00e9t\u00e9 ! Tu as essay\u00e9 " + typesUsed + " types d'activit\u00e9s diff\u00e9rentes");
+        strengths.push("Great variety! You tried " + typesUsed + " different activity types");
     } else {
-        improvements.push("Essaie plus de types d'activit\u00e9s \u2014 synonymes, descriptions, construction de phrases...");
+        improvements.push("Try more activity types \u2014 synonyms, descriptions, sentence building...");
     }
 
-    // Word count
     if (stats.avgWords >= 30) {
-        strengths.push("Bonnes r\u00e9ponses d\u00e9taill\u00e9es avec " + stats.avgWords + " mots en moyenne");
+        strengths.push("Detailed answers with " + stats.avgWords + " words on average");
     } else {
-        improvements.push("Essaie de d\u00e9velopper tes r\u00e9ponses \u2014 vise " + 30 + "+ mots pour les conversations");
+        improvements.push("Try to develop your answers more \u2014 aim for 30+ words for conversations");
     }
 
-    // Comparison
     let trendNote = "";
     if (stats.comparison) {
         if (stats.comparison.sessionChange > 0) {
-            trendNote = "\ud83d\udcc8 " + stats.comparison.sessionChange + " s\u00e9ance(s) de plus que la semaine derni\u00e8re !";
+            trendNote = "\ud83d\udcc8 " + stats.comparison.sessionChange + " more session(s) than last week!";
         } else if (stats.comparison.sessionChange < 0) {
-            trendNote = "\ud83d\udcc9 " + Math.abs(stats.comparison.sessionChange) + " s\u00e9ance(s) de moins que la semaine derni\u00e8re";
+            trendNote = "\ud83d\udcc9 " + Math.abs(stats.comparison.sessionChange) + " fewer session(s) than last week";
         }
     }
 
     let focus = "";
     if (improvements.length > 0) {
         if (stats.sessionCount < 3) {
-            focus = "Objectif : Pratique au moins 1 exercice par jour. La r\u00e9gularit\u00e9 est la cl\u00e9 !";
+            focus = "Goal: Practice at least 1 exercise per day. Consistency is key!";
         } else if (typesUsed < 3) {
-            focus = "Objectif : Essaie un nouveau type d'exercice que tu n'as pas encore fait.";
+            focus = "Goal: Try a new activity type you haven't done yet.";
         } else {
-            focus = "Objectif : Enrichis ton vocabulaire en \u00e9coutant attentivement les versions am\u00e9lior\u00e9es.";
+            focus = "Goal: Enrich your vocabulary by listening carefully to the improved versions.";
         }
     } else {
-        focus = "Continue comme \u00e7a ! Tu fais des progr\u00e8s remarquables.";
+        focus = "Keep it up! You're making remarkable progress.";
     }
 
     return {
-        summary: `${stats.sessionCount} s\u00e9ances cette semaine \u2022 ${stats.avgWords} mots en moyenne`,
+        summary: `${stats.sessionCount} sessions this week \u2022 ${stats.avgWords} words on average`,
         strengths,
         improvements,
         focus,
@@ -1245,8 +1522,12 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// ========================
 // Initialize
+// ========================
 document.addEventListener('DOMContentLoaded', () => {
+    initPicker();
+    setState(APP_STATE.PICKER);
     updateHistoryDisplay();
     updateProgressChart();
     loadReminderSettings();

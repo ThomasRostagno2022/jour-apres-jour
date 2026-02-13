@@ -54,12 +54,26 @@ body {
     padding-top: env(safe-area-inset-top, 16px);
 }
 
-/* Header */
+/* ================================
+   Fade-in Animation
+================================ */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.25s ease-out;
+}
+
+/* ================================
+   Header
+================================ */
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     padding: 8px 0;
 }
 
@@ -100,7 +114,137 @@ header h1 {
     box-shadow: var(--shadow-sm);
 }
 
-/* Cards */
+/* ================================
+   Back Button
+================================ */
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-500);
+    cursor: pointer;
+    padding: 4px 0;
+    margin-bottom: 16px;
+    font-family: 'Nunito', sans-serif;
+    transition: color 0.2s ease;
+}
+
+.back-btn:active {
+    color: var(--primary);
+}
+
+/* ================================
+   Activity Picker (Home Screen)
+================================ */
+.activity-picker {
+    animation: fadeIn 0.25s ease-out;
+}
+
+.picker-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--gray-700);
+    margin-bottom: 14px;
+}
+
+.picker-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.picker-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 110px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    padding: 16px 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-md);
+    font-family: 'Nunito', sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+.picker-tile::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -30%;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.picker-tile:active {
+    transform: scale(0.96);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Per-type gradient backgrounds */
+.picker-tile.conversation {
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+    color: white;
+}
+
+.picker-tile.synonyms {
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    color: white;
+}
+
+.picker-tile.antonyms {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    color: white;
+}
+
+.picker-tile.sentence_building {
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    color: white;
+}
+
+.picker-tile.describe_scene {
+    background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+    color: white;
+}
+
+.picker-tile.fill_blank {
+    background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+    color: white;
+}
+
+.picker-icon {
+    font-size: 32px;
+    margin-bottom: 6px;
+    line-height: 1;
+}
+
+.picker-label {
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.picker-count {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+/* ================================
+   Cards
+================================ */
 .card {
     background: white;
     border-radius: 20px;
@@ -119,7 +263,9 @@ header h1 {
     margin-bottom: 12px;
 }
 
-/* Activity Card */
+/* ================================
+   Activity Card
+================================ */
 #activity-card {
     background: var(--gradient-1);
     color: white;
@@ -127,6 +273,7 @@ header h1 {
     padding: 24px;
     position: relative;
     overflow: hidden;
+    animation: fadeIn 0.25s ease-out;
 }
 
 #activity-card::before {
@@ -238,12 +385,114 @@ header h1 {
     gap: 6px;
 }
 
-/* Recording Section */
+/* ================================
+   Word Tiles (Synonyms / Antonyms)
+================================ */
+#tile-selection-section {
+    animation: fadeIn 0.25s ease-out;
+    margin-bottom: 16px;
+}
+
+.tile-instruction {
+    margin-bottom: 12px;
+}
+
+.tile-instruction p {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-600);
+}
+
+.word-tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.word-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    padding: 12px 10px;
+    background: white;
+    border: 2px solid rgba(139,92,246,0.15);
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--gray-800);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Nunito', sans-serif;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.word-tile:active {
+    transform: scale(0.97);
+}
+
+.word-tile.selected {
+    border-color: var(--primary);
+    background: #f5f0ff;
+    color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+}
+
+/* Revealed states after checking answers */
+.word-tile.correct-selected {
+    background: #d1fae5;
+    border-color: #10b981;
+    color: #065f46;
+    cursor: default;
+    box-shadow: none;
+}
+
+.word-tile.correct-missed {
+    background: white;
+    border: 2px dashed #10b981;
+    color: #065f46;
+    cursor: default;
+    opacity: 0.75;
+    box-shadow: none;
+}
+
+.word-tile.incorrect-selected {
+    background: #fee2e2;
+    border-color: #f87171;
+    color: #991b1b;
+    text-decoration: line-through;
+    cursor: default;
+    box-shadow: none;
+}
+
+.word-tile.neutral {
+    cursor: default;
+    opacity: 0.5;
+    box-shadow: none;
+}
+
+#check-tiles-btn {
+    width: 100%;
+}
+
+#check-tiles-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ================================
+   Recording Section
+================================ */
 #recording-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 0;
+    padding: 24px 0;
+    animation: fadeIn 0.25s ease-out;
 }
 
 #timer {
@@ -266,8 +515,8 @@ header h1 {
 }
 
 .record-button {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     border: none;
     background: var(--gradient-1);
@@ -319,18 +568,20 @@ header h1 {
 }
 
 .mic-icon {
-    font-size: 44px;
+    font-size: 40px;
     margin-bottom: 4px;
 }
 
 #record-label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-/* Transcript */
+/* ================================
+   Transcript
+================================ */
 .transcript {
     font-size: 16px;
     line-height: 1.7;
@@ -370,7 +621,9 @@ header h1 {
     font-weight: 700;
 }
 
-/* Tips Section */
+/* ================================
+   Tips Section
+================================ */
 .tips-section {
     margin-top: 16px;
     padding: 16px;
@@ -403,7 +656,9 @@ header h1 {
     margin-bottom: 8px;
 }
 
-/* AI Loading */
+/* ================================
+   AI Loading
+================================ */
 #ai-loading {
     display: flex;
     flex-direction: column;
@@ -460,7 +715,9 @@ header h1 {
     transform: scale(0.98);
 }
 
-/* Buttons */
+/* ================================
+   Buttons
+================================ */
 .actions {
     display: flex;
     gap: 12px;
@@ -504,7 +761,9 @@ header h1 {
     width: 100%;
 }
 
-/* History */
+/* ================================
+   History
+================================ */
 #history-section {
     background: rgba(255,255,255,0.7);
     backdrop-filter: blur(10px);
@@ -565,7 +824,9 @@ header h1 {
     padding: 30px 20px;
 }
 
-/* Modal */
+/* ================================
+   Modal
+================================ */
 .modal {
     position: fixed;
     top: 0;
@@ -645,7 +906,9 @@ header h1 {
     gap: 12px;
 }
 
-/* Reminder Section */
+/* ================================
+   Reminder Section
+================================ */
 .reminder-section {
     margin: 16px 0;
     padding: 12px;
@@ -685,7 +948,9 @@ header h1 {
     font-size: 12px;
 }
 
-/* Password Screen */
+/* ================================
+   Password Screen
+================================ */
 .password-screen {
     position: fixed;
     inset: 0;
@@ -750,7 +1015,9 @@ header h1 {
     margin-top: 12px;
 }
 
-/* Progress Section */
+/* ================================
+   Progress Section
+================================ */
 .progress-header {
     display: flex;
     justify-content: space-between;
@@ -850,7 +1117,9 @@ header h1 {
     color: var(--danger);
 }
 
-/* Weekly Debrief Modal */
+/* ================================
+   Weekly Debrief Modal
+================================ */
 .debrief-modal {
     max-height: 80vh;
     overflow-y: auto;
@@ -951,12 +1220,16 @@ header h1 {
     transform: scale(0.95);
 }
 
-/* Utilities */
+/* ================================
+   Utilities
+================================ */
 .hidden {
     display: none !important;
 }
 
-/* iOS-specific adjustments */
+/* ================================
+   iOS-specific adjustments
+================================ */
 @supports (-webkit-touch-callout: none) {
     .record-button {
         -webkit-tap-highlight-color: transparent;
@@ -967,7 +1240,9 @@ header h1 {
     }
 }
 
-/* Dark mode support */
+/* ================================
+   Dark Mode
+================================ */
 @media (prefers-color-scheme: dark) {
     body {
         background: linear-gradient(180deg, #1a0f2e 0%, #0f0a1a 100%);
@@ -1143,5 +1418,95 @@ header h1 {
         background: #3d2e5c;
         border-color: #5b4a7a;
         color: #f0e6ff;
+    }
+
+    /* Dark mode: Back button */
+    .back-btn {
+        color: #a78bfa;
+    }
+
+    .back-btn:active {
+        color: #c4b5fd;
+    }
+
+    /* Dark mode: Picker title */
+    .picker-title {
+        color: #e9d5ff;
+    }
+
+    /* Dark mode: Picker tiles — keep gradients, darken slightly */
+    .picker-tile.conversation {
+        background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+    }
+
+    .picker-tile.synonyms {
+        background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+    }
+
+    .picker-tile.antonyms {
+        background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+    }
+
+    .picker-tile.sentence_building {
+        background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+    }
+
+    .picker-tile.describe_scene {
+        background: linear-gradient(135deg, #be185d 0%, #ec4899 100%);
+    }
+
+    .picker-tile.fill_blank {
+        background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+    }
+
+    .picker-tile {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    /* Dark mode: Word tiles */
+    .word-tile {
+        background: #3d2e5c;
+        border-color: #5b4a7a;
+        color: #e9d5ff;
+    }
+
+    .word-tile.selected {
+        border-color: #a78bfa;
+        background: #4c3666;
+        color: #c4b5fd;
+        box-shadow: 0 0 0 3px rgba(167,139,250,0.2);
+    }
+
+    .word-tile.correct-selected {
+        background: #065f46;
+        border-color: #10b981;
+        color: #a7f3d0;
+    }
+
+    .word-tile.correct-missed {
+        background: #2d1f47;
+        border-color: #10b981;
+        color: #6ee7b7;
+        opacity: 0.7;
+    }
+
+    .word-tile.incorrect-selected {
+        background: #7f1d1d;
+        border-color: #f87171;
+        color: #fecaca;
+    }
+
+    .word-tile.neutral {
+        opacity: 0.4;
+    }
+
+    /* Dark mode: Tile instruction */
+    .tile-instruction p {
+        color: #c4b5fd;
+    }
+
+    /* Dark mode: check tiles button disabled */
+    #check-tiles-btn:disabled {
+        opacity: 0.4;
     }
 }

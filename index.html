@@ -30,57 +30,57 @@
         <!-- Weekly Debrief Modal -->
         <div id="weekly-debrief-modal" class="modal hidden">
             <div class="modal-content debrief-modal">
-                <h2>Bilan de la Semaine</h2>
+                <h2>Weekly Summary</h2>
                 <p id="debrief-summary" class="debrief-summary"></p>
 
                 <div id="debrief-trend" class="debrief-trend hidden"></div>
 
                 <div class="debrief-section">
-                    <h3>Ce que tu fais bien</h3>
+                    <h3>What You're Doing Well</h3>
                     <ul id="debrief-strengths"></ul>
                 </div>
 
                 <div class="debrief-section">
-                    <h3>Ce qu'on peut am&eacute;liorer</h3>
+                    <h3>Areas to Improve</h3>
                     <ul id="debrief-improvements"></ul>
                 </div>
 
                 <div class="debrief-focus">
-                    <h3>Objectif de la semaine</h3>
+                    <h3>Weekly Goal</h3>
                     <p id="debrief-focus"></p>
                 </div>
 
-                <button id="close-debrief" class="btn-primary">C'est compris !</button>
+                <button id="close-debrief" class="btn-primary">Got It!</button>
             </div>
         </div>
 
         <!-- Settings Modal -->
         <div id="settings-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>Param&egrave;tres</h2>
+                <h2>Settings</h2>
 
-                <label for="api-key">Cl&eacute; API Groq</label>
-                <input type="password" id="api-key" placeholder="Entre ta cl&eacute; API Groq">
-                <p class="hint">Obtiens ta cl&eacute; gratuite sur <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></p>
+                <label for="api-key">Groq API Key</label>
+                <input type="password" id="api-key" placeholder="Enter your Groq API key">
+                <p class="hint">Get your free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></p>
 
-                <label for="elevenlabs-key">Cl&eacute; API ElevenLabs</label>
-                <input type="password" id="elevenlabs-key" placeholder="Entre ta cl&eacute; ElevenLabs (optionnel)">
-                <p class="hint">Pour la voix naturelle : <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a></p>
+                <label for="elevenlabs-key">ElevenLabs API Key</label>
+                <input type="password" id="elevenlabs-key" placeholder="Enter your ElevenLabs key (optional)">
+                <p class="hint">For natural voice: <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a></p>
 
                 <div class="reminder-section">
-                    <label>Rappel Quotidien</label>
+                    <label>Daily Reminder</label>
                     <div class="reminder-toggle">
                         <input type="checkbox" id="reminder-enabled">
-                        <span>Me rappeler chaque jour &agrave;</span>
+                        <span>Remind me every day at</span>
                         <input type="time" id="reminder-time" value="09:00">
                     </div>
-                    <button id="enable-notifications" class="btn-secondary" style="margin-top: 8px; font-size: 13px;">Activer les Notifications</button>
-                    <p class="hint" id="notification-status">Notifications non activ&eacute;es</p>
+                    <button id="enable-notifications" class="btn-secondary" style="margin-top: 8px; font-size: 13px;">Enable Notifications</button>
+                    <p class="hint" id="notification-status">Notifications not enabled</p>
                 </div>
 
                 <div class="modal-buttons">
-                    <button id="save-settings" class="btn-primary">Sauvegarder</button>
-                    <button id="close-settings" class="btn-secondary">Annuler</button>
+                    <button id="save-settings" class="btn-primary">Save</button>
+                    <button id="close-settings" class="btn-secondary">Cancel</button>
                 </div>
             </div>
         </div>
@@ -94,36 +94,86 @@
             </div>
         </header>
 
-        <!-- Activity Card -->
-        <div id="activity-card" class="card">
-            <div class="activity-type-badge" id="activity-type">Conversation</div>
-            <div class="activity-category" id="activity-category">Bienvenue</div>
-            <p id="activity-prompt">Appuie sur &laquo; Nouvelle Activit&eacute; &raquo; pour commencer</p>
-            <p id="activity-hint" class="hint-text">Tap "New Activity" to start</p>
-            <div class="target-info">
-                <span>Objectif : <strong id="target-words">30</strong> mots</span>
-                <span>Temps : <strong id="target-time">60</strong>s</span>
+        <!-- Back Button (visible during activity) -->
+        <button id="back-to-picker" class="back-btn hidden">&larr; Back to Activities</button>
+
+        <!-- Activity Type Picker (Home State) -->
+        <div id="activity-picker" class="activity-picker">
+            <h2 class="picker-title">Choose an Activity</h2>
+            <div class="picker-grid">
+                <button class="picker-tile conversation" data-type="conversation">
+                    <span class="picker-icon">&#x1F4AC;</span>
+                    <span class="picker-label">Conversation</span>
+                    <span class="picker-count"></span>
+                </button>
+                <button class="picker-tile synonyms" data-type="synonyms">
+                    <span class="picker-icon">&#x1F504;</span>
+                    <span class="picker-label">Synonyms</span>
+                    <span class="picker-count"></span>
+                </button>
+                <button class="picker-tile antonyms" data-type="antonyms">
+                    <span class="picker-icon">&#x2194;&#xFE0F;</span>
+                    <span class="picker-label">Antonyms</span>
+                    <span class="picker-count"></span>
+                </button>
+                <button class="picker-tile sentence_building" data-type="sentence_building">
+                    <span class="picker-icon">&#x1F9E9;</span>
+                    <span class="picker-label">Sentence Building</span>
+                    <span class="picker-count"></span>
+                </button>
+                <button class="picker-tile describe_scene" data-type="describe_scene">
+                    <span class="picker-icon">&#x1F3A8;</span>
+                    <span class="picker-label">Describe a Scene</span>
+                    <span class="picker-count"></span>
+                </button>
+                <button class="picker-tile fill_blank" data-type="fill_blank">
+                    <span class="picker-icon">&#x270D;&#xFE0F;</span>
+                    <span class="picker-label">Fill in the Blank</span>
+                    <span class="picker-count"></span>
+                </button>
             </div>
         </div>
 
-        <!-- Recording Section -->
-        <div id="recording-section">
+        <!-- Activity Card -->
+        <div id="activity-card" class="card hidden">
+            <div class="activity-type-badge" id="activity-type">Conversation</div>
+            <div class="activity-category" id="activity-category"></div>
+            <p id="activity-prompt"></p>
+            <p id="activity-hint" class="hint-text"></p>
+            <div class="target-info" id="target-info">
+                <span>Target: <strong id="target-words">30</strong> words</span>
+                <span>Time: <strong id="target-time">60</strong>s</span>
+            </div>
+        </div>
+
+        <!-- Tile Selection Section (for synonyms/antonyms) -->
+        <div id="tile-selection-section" class="hidden">
+            <div class="tile-instruction">
+                <p id="tile-instruction-text">Select the correct synonyms:</p>
+            </div>
+            <div id="word-tiles" class="word-tiles-grid">
+            </div>
+            <button id="check-tiles-btn" class="btn-primary" disabled>Check My Answers</button>
+        </div>
+
+        <!-- Recording Section (for voice activities) -->
+        <div id="recording-section" class="hidden">
             <div id="timer" class="hidden">
                 <span id="timer-display">01:00</span>
             </div>
             <button id="record-btn" class="record-button">
                 <span class="mic-icon">&#127908;</span>
-                <span id="record-label">Appuie pour Enregistrer</span>
+                <span id="record-label">Tap to Record</span>
             </button>
         </div>
 
         <!-- Results Section -->
         <div id="results-section" class="hidden">
             <div class="card">
-                <h3>Ta R&eacute;ponse</h3>
+                <h3>Your Answer</h3>
                 <p id="transcript-text" class="transcript"></p>
                 <div class="word-count-badge">
-                    <span id="word-count">0</span> mots
+                    <span id="word-count">0</span> words
                 </div>
             </div>
 
@@ -131,50 +181,50 @@
             <div class="card">
                 <div id="ai-loading" class="hidden">
                     <div class="spinner"></div>
-                    <span>Ton prof analyse ta r&eacute;ponse...</span>
+                    <span>Your tutor is analyzing your answer...</span>
                 </div>
                 <div id="improved-result" class="hidden">
-                    <h3>Version Am&eacute;lior&eacute;e</h3>
+                    <h3>Improved Version</h3>
                     <p id="improved-text" class="transcript improved"></p>
-                    <button id="speak-btn" class="btn-speak">&#128266; &Eacute;couter</button>
+                    <button id="speak-btn" class="btn-speak">&#128266; Listen</button>
                 </div>
                 <div id="tips-section" class="tips-section hidden">
-                    <h3>Conseils</h3>
+                    <h3>Tips</h3>
                     <div id="tips-text" class="tips-content"></div>
                 </div>
                 <div id="ai-error" class="hidden">
                     <p class="error-text"></p>
-                    <button id="retry-btn" class="btn-secondary" style="margin-top: 12px; width: 100%;">R&eacute;essayer</button>
+                    <button id="retry-btn" class="btn-secondary" style="margin-top: 12px; width: 100%;">Retry</button>
                 </div>
             </div>
         </div>
 
         <!-- Action Buttons -->
-        <div class="actions">
-            <button id="new-activity-btn" class="btn-primary">Nouvelle Activit&eacute;</button>
-            <button id="reset-btn" class="btn-secondary hidden">Recommencer</button>
+        <div class="actions" id="actions-section">
+            <button id="new-activity-btn" class="btn-primary hidden">New Activity</button>
+            <button id="reset-btn" class="btn-secondary hidden">Try Again</button>
         </div>
 
         <!-- Progress Section -->
         <div id="progress-section" class="card">
             <div class="progress-header">
-                <h3>Tes Progr&egrave;s</h3>
-                <button id="show-debrief-btn" class="debrief-btn" title="Bilan hebdomadaire">&#128202;</button>
+                <h3>Your Progress</h3>
+                <button id="show-debrief-btn" class="debrief-btn" title="Weekly summary">&#128202;</button>
             </div>
             <div id="progress-chart" class="progress-chart">
-                <p class="empty-state">Fais 3+ exercices pour voir tes progr&egrave;s</p>
+                <p class="empty-state">Complete 3+ exercises to see your progress</p>
             </div>
             <div id="progress-stats" class="progress-stats hidden">
                 <div class="stat-item">
-                    <span class="stat-label">S&eacute;ances</span>
+                    <span class="stat-label">Sessions</span>
                     <span id="total-sessions" class="stat-value">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Jours cons&eacute;cutifs</span>
+                    <span class="stat-label">Day Streak</span>
                     <span id="streak-count" class="stat-value">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Tendance</span>
+                    <span class="stat-label">Trend</span>
                     <span id="trend-indicator" class="stat-value">--</span>
                 </div>
             </div>
@@ -182,9 +232,9 @@
 
         <!-- History Section -->
         <div id="history-section" class="card">
-            <h3>S&eacute;ances R&eacute;centes</h3>
+            <h3>Recent Sessions</h3>
             <div id="history-list">
-                <p class="empty-state">Pas encore de s&eacute;ances. Lance ta premi&egrave;re activit&eacute; !</p>
+                <p class="empty-state">No sessions yet. Start your first activity!</p>
             </div>
         </div>
     </div>

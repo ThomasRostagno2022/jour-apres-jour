@@ -261,7 +261,7 @@ const ACTIVITIES = [
     },
 
     // ============================
-    // SYNONYMES
+    // SYNONYMES (with distractors)
     // ============================
     {
         type: 'synonyms',
@@ -269,6 +269,7 @@ const ACTIVITIES = [
         prompt: 'Content(e)',
         hint: 'happy',
         expectedExamples: ['heureux', 'joyeux', 'ravi', 'enchant\u00e9', 'satisfait', '\u00e9panoui'],
+        distractors: ['triste', 'furieux', 'anxieux'],
         targetWords: 5,
         targetTime: 30
     },
@@ -278,6 +279,7 @@ const ACTIVITIES = [
         prompt: 'Beau / Belle',
         hint: 'beautiful',
         expectedExamples: ['joli', 'magnifique', 'splendide', 'superbe', 'ravissant', 'charmant'],
+        distractors: ['laid', 'ordinaire', 'affreux'],
         targetWords: 5,
         targetTime: 30
     },
@@ -287,6 +289,7 @@ const ACTIVITIES = [
         prompt: 'Triste',
         hint: 'sad',
         expectedExamples: ['malheureux', 'm\u00e9lancolique', 'chagrin\u00e9', 'abattu', 'morose', 'd\u00e9prim\u00e9'],
+        distractors: ['joyeux', 'enthousiaste', 'radieux'],
         targetWords: 5,
         targetTime: 30
     },
@@ -295,7 +298,8 @@ const ACTIVITIES = [
         category: 'Synonymes',
         prompt: 'Rapide',
         hint: 'fast',
-        expectedExamples: ['vite', 'v\u00e9loce', 'prompt', 'press\u00e9', 'expéditif', 'vif'],
+        expectedExamples: ['vite', 'v\u00e9loce', 'prompt', 'press\u00e9', 'exp\u00e9ditif', 'vif'],
+        distractors: ['lent', 'paresseux', 'tranquille'],
         targetWords: 5,
         targetTime: 30
     },
@@ -305,6 +309,7 @@ const ACTIVITIES = [
         prompt: 'Manger',
         hint: 'to eat',
         expectedExamples: ['d\u00e9vorer', 'se nourrir', 'd\u00e9guster', 'avaler', 'grignoter', 'se r\u00e9galer'],
+        distractors: ['jeter', 'refuser', 'vomir'],
         targetWords: 5,
         targetTime: 30
     },
@@ -314,6 +319,7 @@ const ACTIVITIES = [
         prompt: 'Maison',
         hint: 'house',
         expectedExamples: ['demeure', 'logement', 'habitation', 'domicile', 'r\u00e9sidence', 'foyer'],
+        distractors: ['rue', 'jardin', 'voyage'],
         targetWords: 5,
         targetTime: 30
     },
@@ -323,15 +329,17 @@ const ACTIVITIES = [
         prompt: 'Parler',
         hint: 'to speak',
         expectedExamples: ['discuter', 'bavarder', 'converser', 's\u2019exprimer', 'dire', 'raconter'],
+        distractors: ['se taire', '\u00e9couter', 'chuchoter'],
         targetWords: 5,
         targetTime: 30
     },
     {
         type: 'synonyms',
         category: 'Synonymes',
-        prompt: 'Difficult',
+        prompt: 'Difficile',
         hint: 'difficult',
         expectedExamples: ['dur', 'compliqu\u00e9', 'ardu', 'p\u00e9nible', 'complexe', '\u00e9prouvant'],
+        distractors: ['facile', 'simple', 'agr\u00e9able'],
         targetWords: 5,
         targetTime: 30
     },
@@ -341,6 +349,7 @@ const ACTIVITIES = [
         prompt: 'Int\u00e9ressant',
         hint: 'interesting',
         expectedExamples: ['captivant', 'passionnant', 'fascinant', 'stimulant', 'enrichissant', 'attrayant'],
+        distractors: ['ennuyeux', 'banal', 'monotone'],
         targetWords: 5,
         targetTime: 30
     },
@@ -350,6 +359,7 @@ const ACTIVITIES = [
         prompt: 'Commencer',
         hint: 'to begin',
         expectedExamples: ['d\u00e9buter', 'entamer', 'amorcer', 'inaugurer', 'lancer', 'd\u00e9marrer'],
+        distractors: ['finir', 'arr\u00eater', 'terminer'],
         targetWords: 5,
         targetTime: 30
     },
@@ -358,7 +368,8 @@ const ACTIVITIES = [
         category: 'Synonymes',
         prompt: 'Peur',
         hint: 'fear',
-        expectedExamples: ['crainte', 'frayeur', 'terreur', 'angoisse', 'effroi', 'appréhension'],
+        expectedExamples: ['crainte', 'frayeur', 'terreur', 'angoisse', 'effroi', 'appr\u00e9hension'],
+        distractors: ['courage', 'calme', 'confiance'],
         targetWords: 5,
         targetTime: 30
     },
@@ -368,6 +379,7 @@ const ACTIVITIES = [
         prompt: 'Travail',
         hint: 'work',
         expectedExamples: ['emploi', 'm\u00e9tier', 'profession', 'poste', 'activit\u00e9', 'boulot'],
+        distractors: ['repos', 'vacances', 'loisir'],
         targetWords: 5,
         targetTime: 30
     },
@@ -377,6 +389,7 @@ const ACTIVITIES = [
         prompt: 'Gentil(le)',
         hint: 'kind / nice',
         expectedExamples: ['aimable', 'sympathique', 'bienveillant', 'attentionn\u00e9', 'doux', 'adorable'],
+        distractors: ['m\u00e9chant', 'cruel', 'agressif'],
         targetWords: 5,
         targetTime: 30
     },
@@ -386,6 +399,7 @@ const ACTIVITIES = [
         prompt: 'Regarder',
         hint: 'to look / to watch',
         expectedExamples: ['observer', 'contempler', 'examiner', 'fixer', 'scruter', 'admirer'],
+        distractors: ['ignorer', 'fermer', 'cacher'],
         targetWords: 5,
         targetTime: 30
     },
@@ -395,12 +409,13 @@ const ACTIVITIES = [
         prompt: 'Voyage',
         hint: 'trip / journey',
         expectedExamples: ['p\u00e9riple', 'excursion', 'exp\u00e9dition', 'escapade', 'trajet', 'randonn\u00e9e'],
+        distractors: ['s\u00e9jour', 'domicile', 'routine'],
         targetWords: 5,
         targetTime: 30
     },
 
     // ============================
-    // ANTONYMES
+    // ANTONYMES (with distractors)
     // ============================
     {
         type: 'antonyms',
@@ -408,6 +423,7 @@ const ACTIVITIES = [
         prompt: 'Grand(e)',
         hint: 'big / tall',
         expectedExamples: ['petit', 'minuscule', 'court', 'bas', 'modeste'],
+        distractors: ['\u00e9norme', 'immense', 'vaste'],
         targetWords: 5,
         targetTime: 30
     },
@@ -417,6 +433,7 @@ const ACTIVITIES = [
         prompt: 'Chaud',
         hint: 'hot',
         expectedExamples: ['froid', 'frais', 'gel\u00e9', 'glac\u00e9', 'frigide'],
+        distractors: ['br\u00fblant', 'ti\u00e8de', 'torride'],
         targetWords: 5,
         targetTime: 30
     },
@@ -426,6 +443,7 @@ const ACTIVITIES = [
         prompt: 'Riche',
         hint: 'rich',
         expectedExamples: ['pauvre', 'd\u00e9muni', 'modeste', 'fauch\u00e9', 'n\u00e9cessiteux'],
+        distractors: ['fortun\u00e9', 'ais\u00e9', 'prosP\u00e8re'],
         targetWords: 5,
         targetTime: 30
     },
@@ -435,6 +453,7 @@ const ACTIVITIES = [
         prompt: 'Ancien',
         hint: 'old / ancient',
         expectedExamples: ['nouveau', 'moderne', 'r\u00e9cent', 'neuf', 'contemporain'],
+        distractors: ['vieux', 'antique', 'ancestral'],
         targetWords: 5,
         targetTime: 30
     },
@@ -444,6 +463,7 @@ const ACTIVITIES = [
         prompt: 'L\u00e9ger',
         hint: 'light (weight)',
         expectedExamples: ['lourd', 'pesant', 'massif', '\u00e9pais', 'dense'],
+        distractors: ['fin', 'mince', 'a\u00e9rien'],
         targetWords: 5,
         targetTime: 30
     },
@@ -453,6 +473,7 @@ const ACTIVITIES = [
         prompt: 'Aimer',
         hint: 'to love',
         expectedExamples: ['d\u00e9tester', 'ha\u00efr', 'abhorrer', 'ex\u00e9crer', 'm\u00e9priser'],
+        distractors: ['adorer', 'ch\u00e9rir', 'appr\u00e9cier'],
         targetWords: 5,
         targetTime: 30
     },
@@ -462,6 +483,7 @@ const ACTIVITIES = [
         prompt: 'Monter',
         hint: 'to go up',
         expectedExamples: ['descendre', 'baisser', 'tomber', 'chuter', 'd\u00e9gringoler'],
+        distractors: ['grimper', 'escalader', 's\u2019\u00e9lever'],
         targetWords: 5,
         targetTime: 30
     },
@@ -471,6 +493,7 @@ const ACTIVITIES = [
         prompt: 'Gagner',
         hint: 'to win',
         expectedExamples: ['perdre', '\u00e9chouer', 'rater', 'louper'],
+        distractors: ['triompher', 'r\u00e9ussir', 'vaincre'],
         targetWords: 5,
         targetTime: 30
     },
@@ -480,6 +503,7 @@ const ACTIVITIES = [
         prompt: 'Bruyant',
         hint: 'noisy',
         expectedExamples: ['silencieux', 'calme', 'tranquille', 'paisible', 'discret'],
+        distractors: ['sonore', 'tonitruant', 'assourdissant'],
         targetWords: 5,
         targetTime: 30
     },
@@ -489,6 +513,7 @@ const ACTIVITIES = [
         prompt: 'G\u00e9n\u00e9reux',
         hint: 'generous',
         expectedExamples: ['avare', '\u00e9go\u00efste', 'radin', 'pingre', 'mesquin'],
+        distractors: ['altruiste', 'prodigue', 'charitable'],
         targetWords: 5,
         targetTime: 30
     },
@@ -498,6 +523,7 @@ const ACTIVITIES = [
         prompt: 'Ouvrir',
         hint: 'to open',
         expectedExamples: ['fermer', 'clore', 'verrouiller', 'sceller', 'bloquer'],
+        distractors: ['d\u00e9voiler', 'd\u00e9plier', 'd\u00e9baller'],
         targetWords: 5,
         targetTime: 30
     },
@@ -507,6 +533,7 @@ const ACTIVITIES = [
         prompt: 'Courage',
         hint: 'courage',
         expectedExamples: ['l\u00e2chet\u00e9', 'peur', 'couardise', 'timidit\u00e9', 'faiblesse'],
+        distractors: ['bravoure', 'audace', 'vaillance'],
         targetWords: 5,
         targetTime: 30
     },
@@ -516,6 +543,7 @@ const ACTIVITIES = [
         prompt: 'Facile',
         hint: 'easy',
         expectedExamples: ['difficile', 'dur', 'compliqu\u00e9', 'ardu', 'complexe'],
+        distractors: ['simple', '\u00e9l\u00e9mentaire', 'ais\u00e9'],
         targetWords: 5,
         targetTime: 30
     },
@@ -525,6 +553,7 @@ const ACTIVITIES = [
         prompt: 'Sucr\u00e9',
         hint: 'sweet',
         expectedExamples: ['sal\u00e9', 'amer', 'acide', 'aigre', '\u00e2pre'],
+        distractors: ['doux', 'mielleux', 'succulant'],
         targetWords: 5,
         targetTime: 30
     },
@@ -534,6 +563,7 @@ const ACTIVITIES = [
         prompt: 'Accepter',
         hint: 'to accept',
         expectedExamples: ['refuser', 'rejeter', 'd\u00e9cliner', 'repousser', 'nier'],
+        distractors: ['accueillir', 'approuver', 'consentir'],
         targetWords: 5,
         targetTime: 30
     },
@@ -798,14 +828,14 @@ const FRENCH_FILLER_WORDS = [
     'tu vois', 'tu sais', 'enfin', 'c\u2019est-\u00e0-dire'
 ];
 
-// Activity type display names
+// Activity type display names (English for UI)
 const ACTIVITY_TYPE_LABELS = {
     conversation: 'Conversation',
-    synonyms: 'Synonymes',
-    antonyms: 'Antonymes',
-    sentence_building: 'Construction',
-    describe_scene: 'Description',
-    fill_blank: 'Compl\u00e8te'
+    synonyms: 'Synonyms',
+    antonyms: 'Antonyms',
+    sentence_building: 'Sentence Building',
+    describe_scene: 'Describe a Scene',
+    fill_blank: 'Fill in the Blank'
 };
 
 // Activity type icons
@@ -817,3 +847,9 @@ const ACTIVITY_TYPE_ICONS = {
     describe_scene: '\ud83c\udfa8',
     fill_blank: '\u270d\ufe0f'
 };
+
+// Computed activity counts per type
+const ACTIVITY_TYPE_COUNTS = {};
+ACTIVITIES.forEach(a => {
+    ACTIVITY_TYPE_COUNTS[a.type] = (ACTIVITY_TYPE_COUNTS[a.type] || 0) + 1;
+});
